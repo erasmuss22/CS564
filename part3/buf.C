@@ -65,29 +65,63 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
+	Status status;
 
 
 
 
-
-}
+} 
 
 	
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 {
-
-
-
-
-
+	Status status;
+	int frame;
+	
+	// Check if the pageNo of the file is in the hashtable
+	if ((status = hashTable->lookup(file, PageNo, frame)) == OK){
+		// If it is, set the refpulbit to true and increment pinCnt
+		bufTable[frame].refbit = true;
+		bufTable[frame].pinCnt++;
+		return OK;
+	} else {
+		/* If it isn't in the hashtable, find the next frame it could be
+		in and read the page from the disk into that frame. Then set
+		up the page in the buffer and insert it into the hashtable */
+		if((status = allocBuf(frame)) != OK) return status;
+		if((status = file->readPage(PageNo, &(bufPool[frame]))) != OK) return status;
+		if((status = hastTable->insert(file, PageNo, frame)) != OK) return status;
+		bufTable[frame].Set(file, PageNo);
+		return status;
+	}
 }
 
 
 const Status BufMgr::unPinPage(File* file, const int PageNo, 
 			       const bool dirty) 
 {
-
-
+	Status status;
+	int frame
+	// Lookup pageNo of file to see if it's in the hashtable
+	if ((status = hashTable->lookup(file, PageNo, frame)) == OK){
+		// Check if the pinCnt is at 0
+		if (bufTable[frame].pinCnt == 0){
+			if (dirty == true){
+				bufTable[frame].dirty = true;
+			}
+			return PAGENOTPINNED
+		} else{
+			if (dirty == true){
+				// Set the dirty bit
+				bufTable[frame].dirty = true;
+			} 
+			// Decrement the pinCnt
+			bufTable[frame].pinCnt--;
+			return OK;
+		}
+	} else {
+		return status;
+	}
 
 
 
@@ -95,12 +129,13 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
 
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page) 
 {
-
-
-
-
-
-
+	Status status;
+	int frame;
+	// Allocate the page in the file and set the pageNo
+	if((status = file->allocatePage(pageNo)) != OK) return status;
+	// Read the page into the buffer pool
+	if((status = readPage(file, pageNo, page)) != OK) return status;
+	return status;
 }
 
 const Status BufMgr::disposePage(File* file, const int pageNo) 
