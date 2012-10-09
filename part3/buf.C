@@ -68,14 +68,14 @@ const Status BufMgr::allocBuf(int & frame)
 advanceClock();
 	unsigned int startPos = clockHand;
 	unsigned int currPos = clockHand;
-	BufDesc* currDesc;
-	
+	BufDesc currDesc;
+	Status status;
 	// Iterate through the frames looking for a useable one.
 	// This terminates after reaching the starting clockHand
 	// position again.
 	do 
 	{
-		currDesc = &bufTable[currPos];
+		currDesc = bufTable[currPos];
 		
 		// If the current frame is valid continue to check other
 		// informational variables.
@@ -83,7 +83,7 @@ advanceClock();
 			//  If the refbit is true it is unusable. Advance the clock
 			if( currDesc.refbit ) {
 				currDesc.refbit = false;
-				advaceClock();
+				advanceClock();
 				currPos = clockHand;
 			}
 			// If the pin count is > 0 it is also unuseable because other processes,
@@ -112,7 +112,7 @@ advanceClock();
 		
 		else {
 			if (currDesc.dirty) {
-				status = currDesc.file->writePage(currDesc.pageNo, bufPool[currPos]);
+				status = currDesc.file->writePage(currDesc.pageNo, &(bufPool[currPos]));
 				if (status != OK)
 						return status;
 			}
@@ -146,7 +146,7 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 		up the page in the buffer and insert it into the hashtable */
 		if((status = allocBuf(frame)) != OK) return status;
 		if((status = file->readPage(PageNo, &(bufPool[frame]))) != OK) return status;
-		if((status = hastTable->insert(file, PageNo, frame)) != OK) return status;
+		if((status = hashTable->insert(file, PageNo, frame)) != OK) return status;
 		bufTable[frame].Set(file, PageNo);
 		return status;
 	}
@@ -157,7 +157,7 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
 			       const bool dirty) 
 {
 	Status status;
-	int frame
+	int frame;
 	// Lookup pageNo of file to see if it's in the hashtable
 	if ((status = hashTable->lookup(file, PageNo, frame)) == OK){
 		// Check if the pinCnt is at 0
@@ -165,7 +165,7 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
 			if (dirty == true){
 				bufTable[frame].dirty = true;
 			}
-			return PAGENOTPINNED
+			return PAGENOTPINNED;
 		} else{
 			if (dirty == true){
 				// Set the dirty bit
@@ -186,13 +186,13 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page) 
 {
 	Status status;
-	int frame;
 	// Allocate the page in the file and set the pageNo
 	if((status = file->allocatePage(pageNo)) != OK) return status;
 	// Read the page into the buffer pool
 	if((status = readPage(file, pageNo, page)) != OK) return status;
 	return status;
 }
+
 
 const Status BufMgr::disposePage(File* file, const int pageNo) 
 {
