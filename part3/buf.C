@@ -65,12 +65,68 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
-	Status status;
+advanceClock();
+	unsigned int startPos = clockHand;
+	unsigned int currPos = clockHand;
+	BufDesc* currDesc;
+	
+	// Iterate through the frames looking for a useable one.
+	// This terminates after reaching the starting clockHand
+	// position again.
+	do 
+	{
+		currDesc = &bufTable[currPos];
+		
+		// If the current frame is valid continue to check other
+		// informational variables.
+		if( currDesc.valid ) {
+			//  If the refbit is true it is unusable. Advance the clock
+			if( currDesc.refbit ) {
+				currDesc.refbit = false;
+				advaceClock();
+				currPos = clockHand;
+			}
+			// If the pin count is > 0 it is also unuseable because other processes,
+			// are using it.  Advance the clock.
+			else if (currDesc.pinCnt > 0) {
+				advanceClock();
+				currPos = clockHand;
+			}
+			// Found a useable frame
+			else {
+				// Check to see if we need to write the page to file before using.
+				if (currDesc.dirty) {
+					status = currDesc.file->writePage(currDesc.pageNo, &(bufPool[currPos]));
+					if (status != OK)
+						return status;
+				}
+				
+				// Frame was valid so we need to remove it from the hashTable before allocating.
+				frame = clockHand;
+				status = hashTable->remove(currDesc.file, currDesc.pageNo);
+				return status;
+			}
+		}
+		// Frame was invalid so we can use it.  Checking to see if the page is dirty, but still need
+		// to work through this to see if it's necessary.
+		
+		else {
+			if (currDesc.dirty) {
+				status = currDesc.file->writePage(currDesc.pageNo, bufPool[currPos]);
+				if (status != OK)
+						return status;
+			}
+			frame = clockHand;
+			return OK;
+		}
+	
+	} while (currPos != startPos);
+	
+	return BUFFEREXCEEDED;
+	
+}
+	
 
-
-
-
-} 
 
 	
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
