@@ -65,7 +65,7 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
-advanceClock();
+/*advanceClock();
 	unsigned int startPos = clockHand;
 	unsigned int currPos = clockHand;
 	BufDesc currDesc;
@@ -73,6 +73,7 @@ advanceClock();
 	// Iterate through the frames looking for a useable one.
 	// This terminates after reaching the starting clockHand
 	// position again.
+	cout << "hello4" << endl;
 	do 
 	{
 		currDesc = bufTable[currPos];
@@ -80,6 +81,8 @@ advanceClock();
 		// If the current frame is valid continue to check other
 		// informational variables.
 		if( currDesc.valid ) {
+			cout << "hello5" << endl;
+			cout << "clockHand " << clockHand << endl;
 			//  If the refbit is true it is unusable. Advance the clock
 			if( currDesc.refbit ) {
 				currDesc.refbit = false;
@@ -111,16 +114,83 @@ advanceClock();
 		// to work through this to see if it's necessary.
 		
 		else {
+			cout << "hello6" << endl;
 			if (currDesc.dirty) {
+				cout << "hello7" << endl;
 				status = currDesc.file->writePage(currDesc.pageNo, &(bufPool[currPos]));
 				if (status != OK)
 						return status;
 			}
 			frame = clockHand;
+			cout << clockHand << endl;
 			return OK;
 		}
 	
 	} while (currPos != startPos);
+	
+	return BUFFEREXCEEDED;*/
+	advanceClock();
+	unsigned int startPos = clockHand;
+	unsigned int currPos = clockHand;
+	int count = 0;
+	Status status;
+	// Iterate through the frames looking for a useable one.
+	// This terminates after reaching the starting clockHand
+	// position again.
+	while (count < (2 * numBufs))
+	{
+		count++;
+		// If the current frame is valid continue to check other
+		// informational variables.
+		if( bufTable[currPos].valid ) {
+			//  If the refbit is true it is unusable. Advance the clock
+			if( bufTable[currPos].refbit ) {
+				bufTable[currPos].refbit = false;
+				advanceClock();
+				currPos = clockHand;
+			}
+			// If the pin count is > 0 it is also unuseable because other processes,
+			// are using it.  Advance the clock.
+			else if (bufTable[currPos].pinCnt > 0) {
+				advanceClock();
+				currPos = clockHand;
+			}
+			// Found a useable frame
+			else {
+				// Check to see if we need to write the page to file before using.
+				if (bufTable[currPos].dirty) {
+					status = bufTable[currPos].file->writePage(bufTable[currPos].pageNo, &(bufPool[currPos]));
+					if (status != OK)
+						return status;
+				}
+				
+				// Frame was valid so we need to remove it from the hashTable before allocating.
+				frame = clockHand;
+				int temp;
+				if ((status = hashTable->lookup(bufTable[currPos].file, bufTable[currPos].pageNo, temp)) == OK){
+					status = hashTable->remove(bufTable[currPos].file, bufTable[currPos].pageNo);
+					return status;
+				} else {
+					return OK;
+				}
+				
+			}
+		}
+		// Frame was invalid so we can use it.  Checking to see if the page is dirty, but still need
+		// to work through this to see if it's necessary.
+		
+		else {
+			if (bufTable[currPos].dirty) {
+				status = bufTable[currPos].file->writePage(bufTable[currPos].pageNo, &(bufPool[currPos]));
+				if (status != OK)
+						return status;
+			}
+			status = hashTable->remove(bufTable[currPos].file, bufTable[currPos].pageNo);
+			frame = clockHand;
+			return OK;
+		}
+	
+	}
 	
 	return BUFFEREXCEEDED;
 	
@@ -133,12 +203,12 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 {
 	Status status;
 	int frame;
-	
 	// Check if the pageNo of the file is in the hashtable
 	if ((status = hashTable->lookup(file, PageNo, frame)) == OK){
 		// If it is, set the refpulbit to true and increment pinCnt
 		bufTable[frame].refbit = true;
 		bufTable[frame].pinCnt++;
+		page = &bufPool[frame];
 		return OK;
 	} else {
 		/* If it isn't in the hashtable, find the next frame it could be
@@ -146,6 +216,7 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 		up the page in the buffer and insert it into the hashtable */
 		if((status = allocBuf(frame)) != OK) return status;
 		if((status = file->readPage(PageNo, &(bufPool[frame]))) != OK) return status;
+		page = &bufPool[frame];
 		if((status = hashTable->insert(file, PageNo, frame)) != OK) return status;
 		bufTable[frame].Set(file, PageNo);
 		return status;

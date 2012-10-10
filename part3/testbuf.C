@@ -96,7 +96,7 @@ int main()
     cout << "Allocating pages in a file..." << endl;
     for (i = 0; i < num; i++) {
       CALL(bufMgr->allocPage(file1, j[i], page));
-      sprintf((char*)page, "test.1 Page %d %7.1f", j[i], (float)j[i]);
+	  sprintf((char*)page, "test.1 Page %d %7.1f", j[i], (float)j[i]);
       CALL(bufMgr->unPinPage(file1, j[i], true));
     }
     cout <<"Test passed"<<endl<<endl;
@@ -108,6 +108,7 @@ int main()
       ASSERT(memcmp(page, &cmp, strlen((char*)&cmp)) == 0);
       CALL(bufMgr->unPinPage(file1, j[i], false));
     }
+	
     cout<< "Test passed"<<endl<<endl;
 
    
@@ -118,7 +119,7 @@ int main()
 
     for (i = 0; i < num/3; i++) 
     {
-      CALL(bufMgr->allocPage(file2, pageno2, page2));
+	  CALL(bufMgr->allocPage(file2, pageno2, page2));
       sprintf((char*)page2, "test.2 Page %d %7.1f", pageno2, (float)pageno2);
       CALL(bufMgr->allocPage(file3, pageno3, page3));
       sprintf((char*)page3, "test.3 Page %d %7.1f", pageno3, (float)pageno3);
@@ -126,7 +127,6 @@ int main()
       CALL(bufMgr->readPage(file1, pageno, page));
       sprintf((char*)&cmp, "test.1 Page %d %7.1f", pageno, (float)pageno);
       ASSERT(memcmp(page, &cmp, strlen((char*)&cmp)) == 0);
-      cout << (char*)page << endl;
       CALL(bufMgr->readPage(file2, pageno2, page2));
       sprintf((char*)&cmp, "test.2 Page %d %7.1f", pageno2, (float)pageno2);
       ASSERT(memcmp(page2, &cmp, strlen((char*)&cmp)) == 0);
@@ -171,7 +171,6 @@ int main()
       CALL(bufMgr->readPage(file2, i, page2));
       sprintf((char*)&cmp, "test.2 Page %d %7.1f", i, (float)i);
       ASSERT(memcmp(page2, &cmp, strlen((char*)&cmp)) == 0);
-      cout << (char*)page2 << endl;
       CALL(bufMgr->unPinPage(file2, i, false));
     }
     cout << "Test passed" <<endl<<endl;
@@ -185,7 +184,6 @@ int main()
       CALL(bufMgr->readPage(file3, i, page3));
       sprintf((char*)&cmp, "test.3 Page %d %7.1f", i, (float)i);
       ASSERT(memcmp(page3, &cmp, strlen((char*)&cmp)) == 0);
-      cout << (char*)page3 << endl;
       CALL(bufMgr->unPinPage(file3, i, false));
     }
 
@@ -236,7 +234,6 @@ int main()
       CALL(bufMgr->readPage(file1, i, page));
       sprintf((char*)&cmp, "test.1 Page %d %7.1f", i, (float)i);
       ASSERT(memcmp(page, &cmp, strlen((char*)&cmp)) == 0);
-      cout << (char*)page << endl;
     }
     
     cout << "Test passed" <<endl<<endl;
