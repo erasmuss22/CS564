@@ -17,18 +17,34 @@ const Status createHeapFile(const string fileName)
     {
 		// file doesn't exist. First create it and allocate
 		// an empty header page and data page.
+		if ((status = db.createFile(fileName)) != OK) return status;
 		
+		// Allocate the page which sets a pointer for newPage
+		if ((status = bufMgr->allocPage(file, hdrPageNo, newPage)) != OK) return status;
 		
+		// Cast Page to FileHdrPage and initialize hdrPage
+		hdrPage = (FileHdrPage *) newPage;
 		
+		// Set first page of file by calling allocPage
+		if ((status = bufMgr->allocPage(file, newPageNo, newPage)) != OK) return status;
 		
+		// Initialize the first page which also sets its next page to -1
+		newPage->init(newPageNo);
 		
+		// Set the first and last page variables
+		hdrPage->firstPage = newPageNo;
+		hdrPage->lastPage = newPageNo;
+		hdrPage->pageCnt = 1;
+		hdrPage->recCnt = 0;
 		
+		// Unpin the pages and set their dirty bits
+		if ((status = bufMgr->unPinPage(file, newPageNo, true)) != OK) return status;
+		if ((status = bufMgr->unPinPage(file, hdrPageNo, true)) != OK) return status;
 		
-		
-		
-		
-		
-		
+		// Flush the file to disk and close it
+		if ((status = bufMgr->flushFile(file)) != OK) return status;
+		if ((status = db.closeFile(file)) != OK) return status;
+		return OK;	
 		
     }
     return (FILEEXISTS);
@@ -51,6 +67,7 @@ HeapFile::HeapFile(const string & fileName, Status& returnStatus)
     // open the file and read in the header page and the first data page
     if ((status = db.openFile(fileName, filePtr)) == OK)
     {
+		
 		
 		
 		
