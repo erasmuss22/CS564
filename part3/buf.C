@@ -1,3 +1,11 @@
+/*
+ * Project Phase 3
+ * CS 564
+ * Erin Rasmussen (ejrasmussen2@wisc.edu)
+ * Andre Perkins (wperkins@wisc.edu)
+ * 
+ * 
+*/
 #include <memory.h>
 #include <unistd.h>
 #include <errno.h>
@@ -106,13 +114,8 @@ const Status BufMgr::allocBuf(int & frame)
 				
 				// Frame was valid so we need to remove it from the hashTable before allocating.
 				frame = clockHand;
-				int temp;
-				if ((status = hashTable->lookup(bufTable[currPos].file, bufTable[currPos].pageNo, temp)) == OK){
-					status = hashTable->remove(bufTable[currPos].file, bufTable[currPos].pageNo);
-					return status;
-				} else {
-					return OK;
-				}
+				status = hashTable->remove(bufTable[currPos].file, bufTable[currPos].pageNo);
+				return OK;
 				
 			}
 		}
@@ -125,7 +128,6 @@ const Status BufMgr::allocBuf(int & frame)
 				if (status != OK)
 						return status;
 			}
-			status = hashTable->remove(bufTable[currPos].file, bufTable[currPos].pageNo);
 			frame = clockHand;
 			return OK;
 		}

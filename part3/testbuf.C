@@ -203,6 +203,7 @@ int main()
     CALL(bufMgr->unPinPage(file4, i, true));
     FAIL(status = bufMgr->unPinPage(file4, i, false));
     error.print(status);
+	
 
     cout << "Test passed" <<endl<<endl;
 
