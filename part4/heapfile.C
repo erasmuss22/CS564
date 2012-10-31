@@ -280,13 +280,176 @@ const Status HeapFileScan::resetScan()
 
 const Status HeapFileScan::scanNext(RID& outRid)
 {
-    Status 	status = OK;
+    /*
+	Status 	status = OK;
     RID		nextRid;
     RID		tmpRid;
     int 	nextPageNo;
     Record      rec;
+	bool    matched = false;
+	// get the very first page
+		if (markedPageNo == NULL){
+			
+			curPageNo = headerPage->firstPage;
+			if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK) return status;
+			if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
+			if ((status = curPage->firstRecord(tmpRid)) != OK) return status;
+			
+			
+		} else {
+			if (markedPageNo == -1) return FILEEOF;
+			
+			if ((status = bufMgr->readPage(filePtr, markedPageNo, curPage)) != OK) return status;
+			if ((status = bufMgr->unPinPage(filePtr, markedPageNo, false)) != OK) return status;
+			curPageNo = markedPageNo;
+			if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
+			tmpRid = markedRec;
+			
+		}
 
-    
+    do{
+		
+		if ((status = curPage->getRecord(tmpRid, rec)) != OK) return status;
+		matched = matchRec(rec);
+		if (matched) outRid = tmpRid;
+		
+		// Need 
+		if ((status = curPage->nextRecord(tmpRid, nextRid)) == ENDOFPAGE) {
+			// done with that page so unpin it
+			if ((status = bufMgr->unPinPage(filePtr, curPageNo, false)) != OK) return status;
+			
+			// a next page exists so we read it and get the first record
+			if (nextPageNo != -1) {
+				
+				if ((status = bufMgr->readPage(filePtr, nextPageNo, curPage)) != OK) return status;
+				if ((status = curPage->firstRecord(tmpRid)) != OK) return status;
+				curPageNo = nextPageNo;
+				
+			}   // a next page doesn't exist, since we have no match just return fileeof
+				else if (nextPageNo == -1 && !matched){
+				return FILEEOF;
+			} 	// a next page doesn't exist, but we have a match. We must return the outRid
+				// and then let the intro code handle returning fileeof the next time scanNext 
+				// is called
+				else if (nextPageNo == -1 && matched){
+				curPageNo = nextPageNo;
+			}
+			curRec = tmpRid;
+			status = markScan();
+		} else {
+			curRec = tmpRid;
+			tmpRid = nextRid;
+			
+			
+		}
+		
+		
+		
+		
+	} while (!matched);
+	  
+	  //curRec = outRid;
+	  return OK;
+	
+	
+	
+	*/
+	
+	
+	Status 	status = OK;
+    RID		nextRid;
+    RID		tmpRid;
+    int 	nextPageNo;
+    Record      rec;
+	bool    matched = false;
+	// get the very first page
+		if (markedPageNo == NULL){
+			
+			curPageNo = headerPage->firstPage;
+			if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK) return status;
+			if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
+			if ((status = curPage->firstRecord(tmpRid)) != OK) return status;
+			
+			
+		} else {
+			if (markedPageNo == -1) return FILEEOF;
+			
+			if ((status = bufMgr->readPage(filePtr, markedPageNo, curPage)) != OK) return status;
+			if ((status = bufMgr->unPinPage(filePtr, markedPageNo, false)) != OK) return status;
+			curPageNo = markedPageNo;
+			if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
+			tmpRid = markedRec;
+			
+			
+			
+			if ((status = curPage->nextRecord(tmpRid, nextRid)) == ENDOFPAGE) {
+			// done with that page so unpin it
+				if ((status = bufMgr->unPinPage(filePtr, curPageNo, false)) != OK) return status;
+			
+			// a next page exists so we read it and get the first record
+				if (nextPageNo != -1) {
+					
+					if ((status = bufMgr->readPage(filePtr, nextPageNo, curPage)) != OK) return status;
+					if ((status = curPage->firstRecord(tmpRid)) != OK) return status;
+					curPageNo = nextPageNo;
+					
+				}   // a next page doesn't exist, since we have no match just return fileeof
+					else if (nextPageNo == -1){
+					return FILEEOF;
+				} 
+				
+			} else {
+				tmpRid = nextRid;
+			}
+			
+			
+		}
+
+    do{
+		
+		if ((status = curPage->getRecord(tmpRid, rec)) != OK) return status;
+		matched = matchRec(rec);
+		if (matched) {
+			outRid = tmpRid;
+			curRec = tmpRid;
+		} else {
+				if ((status = curPage->nextRecord(tmpRid, nextRid)) == ENDOFPAGE) {
+				// done with that page so unpin it
+				if ((status = bufMgr->unPinPage(filePtr, curPageNo, false)) != OK) return status;
+				
+				// a next page exists so we read it and get the first record
+				if (nextPageNo != -1) {
+					
+					if ((status = bufMgr->readPage(filePtr, nextPageNo, curPage)) != OK) return status;
+					if ((status = curPage->firstRecord(tmpRid)) != OK) return status;
+					curPageNo = nextPageNo;
+					
+				}   // a next page doesn't exist, since we have no match just return fileeof
+					else if (nextPageNo == -1 && !matched){
+					return FILEEOF;
+				} 	// a next page doesn't exist, but we have a match. We must return the outRid
+					// and then let the intro code handle returning fileeof the next time scanNext 
+					// is called
+					else if (nextPageNo == -1 && matched){
+					curPageNo = nextPageNo;
+				}
+				
+			} else {
+				tmpRid = nextRid;
+				
+				
+			}
+		}
+		
+		// Need 
+		
+		
+		
+		
+		
+	} while (!matched);
+	  status = markScan();
+	  return OK;
 	
 	
 	
