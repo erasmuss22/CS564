@@ -16,26 +16,33 @@ const Status createHeapFile(const string fileName)
     if (status != OK)
     {
 		// file doesn't exist. First create it and allocate
-		// an empty header page and data page.
+		// an empty header page and data page. Also must open it
 		if ((status = db.createFile(fileName)) != OK) return status;
+		if ((status = db.openFile(fileName, file)) != OK) return status;
+		
 		
 		// Allocate the page which sets a pointer for newPage
 		if ((status = bufMgr->allocPage(file, hdrPageNo, newPage)) != OK) return status;
 		
+		
 		// Cast Page to FileHdrPage and initialize hdrPage
 		hdrPage = (FileHdrPage *) newPage;
+		
 		
 		// Set first page of file by calling allocPage
 		if ((status = bufMgr->allocPage(file, newPageNo, newPage)) != OK) return status;
 		
+		
 		// Initialize the first page which also sets its next page to -1
 		newPage->init(newPageNo);
+		
 		
 		// Set the first and last page variables
 		hdrPage->firstPage = newPageNo;
 		hdrPage->lastPage = newPageNo;
 		hdrPage->pageCnt = 1;
 		hdrPage->recCnt = 0;
+		
 		
 		// Unpin the pages and set their dirty bits
 		if ((status = bufMgr->unPinPage(file, newPageNo, true)) != OK) return status;
@@ -67,17 +74,37 @@ HeapFile::HeapFile(const string & fileName, Status& returnStatus)
     // open the file and read in the header page and the first data page
     if ((status = db.openFile(fileName, filePtr)) == OK)
     {
+		// start by getting the header page of the file
+		if ((status = filePtr->getFirstPage(headerPageNo)) != OK) {
+			returnStatus = status;
+			return;
+		}
+		
+		
+		// Read and pin the header page
+		if ((status = bufMgr->readPage(filePtr, headerPageNo, pagePtr)) != OK){
+			returnStatus = status;
+			return;
+		} 
 		
 		
 		
+		// Initialize class variables
+		hdrDirtyFlag = false;
+		headerPage = (FileHdrPage *) pagePtr;
 		
 		
 		
-		
-		
-		
-		
-		
+		// Read and pin the first page while initializing cur variables
+		curPageNo = headerPage->firstPage;
+		if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK){
+			returnStatus = status;
+			return;
+		}
+		curDirtyFlag = false;
+		curRec = NULLRID;
+		returnStatus = status = OK;
+		return;
 		
     }
     else
@@ -136,13 +163,30 @@ const Status HeapFile::getRecord(const RID & rid, Record & rec)
 {
     Status status;
 
-    // cout<< "getRecord. record (" << rid.pageNo << "." << rid.slotNo << ")" << endl;
-   
-   
-   
-   
-   
-   
+    cout<< "getRecord. record (" << rid.pageNo << "." << rid.slotNo << ")" << endl;
+    
+	// Check to see if the desired record is currently pinned
+	if (rid.pageNo == curPageNo){
+		// It is pinned so simply get the record and do book keeping
+		status = curPage->getRecord(rid, rec);
+		curRec = rid;
+		return status;
+	}
+    
+	
+	// The desired page isn't pinned, so we must unpin it
+	if ((status = bufMgr->unPinPage(filePtr, curPageNo, curDirtyFlag)) != OK) return status;
+	
+	// Read the desired page into the buffer pool, get record, and do book keeping
+	if ((status = bufMgr->readPage(filePtr, rid.pageNo, curPage)) != OK) return status;
+	status = curPage->getRecord(rid, rec);
+    
+	curRec = rid;
+	curPageNo = rid.pageNo;
+	curDirtyFlag = false;
+	
+	return status;
+
    
 }
 
@@ -367,6 +411,7 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
     Status	status, unpinstatus;
     RID		rid;
 
+
     // check for very large records
     if ((unsigned int) rec.length > PAGESIZE-DPFIXED)
     {
@@ -375,8 +420,67 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
     }
 
   
-  
-  
+    // Since this is a heap file, start by setting the current page to
+	// being the last page of the file
+	curPageNo = headerPage->lastPage;
+	
+	
+	// Then read it into the buffer pool
+	if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK) return status;
+	
+	
+	// Add the desired record to the last page, if this doesn't work
+	// that page is full and we must add another page to the end and do
+	// the respective book keeping
+	
+	if ((status = curPage->insertRecord(rec, rid)) == OK){
+		outRid = rid;		   // return rid of inserted record	
+		hdrDirtyFlag = true;  // Inserted record, thus page is now dirty
+		curDirtyFlag = true;
+		headerPage->recCnt += 1; // update the record count in header page
+		return OK;
+	} 
+	
+	// Inserting the record didn't work b/c the page was full
+	
+	else {
+		
+		// Start by allocating a new page via the bufMgr and initializing the page
+		if ((status = bufMgr->allocPage(filePtr, newPageNo, newPage)) != OK) return status;
+		newPage->init(newPageNo);
+		
+		// Since this will be the new last page, set its next page to point to
+		// -1. Since it only returns OK, no need to check the status. We also
+		// update the header page meta data because it points to a new last page
+		status = newPage->setNextPage(-1);
+		headerPage->lastPage = newPageNo;
+		headerPage->pageCnt += 1; // Added a page, update the page count
+		hdrDirtyFlag = true;
+		
+		// In addition to updating the headerPage meta data, we must set the
+		// current page (the one that is full) to point to the new page to
+		// keep the heap file as a linked list
+		status = curPage->setNextPage(newPageNo);
+		
+		// We are no longer using the current page, so unpin it
+		if ((status = bufMgr->unPinPage(filePtr, newPageNo, curDirtyFlag)) != OK){
+			// extra things for when  the page is already unpinned?
+			return status;
+		} 
+		
+		// Set the current page to the new one and then try to insert the record
+		curPageNo = newPageNo;
+		curPage = newPage;
+		if ((status = curPage->insertRecord(rec, rid)) == OK){
+			outRid = rid;		   // return rid of inserted record	
+			hdrDirtyFlag = true;  // Inserted record, thus page is now dirty
+			curDirtyFlag = true;
+			headerPage->recCnt += 1; // update the record count in header page
+			return OK;
+		}
+		return status;
+		
+	}
   
   
   
