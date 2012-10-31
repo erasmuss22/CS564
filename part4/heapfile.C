@@ -48,6 +48,7 @@ const Status createHeapFile(const string fileName)
 		if ((status = bufMgr->unPinPage(file, newPageNo, true)) != OK) return status;
 		if ((status = bufMgr->unPinPage(file, hdrPageNo, true)) != OK) return status;
 		
+		
 		// Flush the file to disk and close it
 		if ((status = bufMgr->flushFile(file)) != OK) return status;
 		if ((status = db.closeFile(file)) != OK) return status;
@@ -294,7 +295,6 @@ const Status HeapFileScan::scanNext(RID& outRid)
 	
 	
 	
-	
 }
 
 
@@ -421,18 +421,19 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
 
   
     // Since this is a heap file, start by setting the current page to
-	// being the last page of the file
-	curPageNo = headerPage->lastPage;
-	
-	
-	// Then read it into the buffer pool
-	if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK) return status;
-	
+	// being the last page of the file. Must check if curPage is null,
+	// otherwise it has a pinCnt of like 14
+	if (curPage == NULL){
+		curPageNo = headerPage->lastPage;
+		
+		
+		// Then read it into the buffer pool
+		if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK) return status;
+	}
 	
 	// Add the desired record to the last page, if this doesn't work
 	// that page is full and we must add another page to the end and do
 	// the respective book keeping
-	
 	if ((status = curPage->insertRecord(rec, rid)) == OK){
 		outRid = rid;		   // return rid of inserted record	
 		hdrDirtyFlag = true;  // Inserted record, thus page is now dirty
@@ -444,7 +445,7 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
 	// Inserting the record didn't work b/c the page was full
 	
 	else {
-		
+
 		// Start by allocating a new page via the bufMgr and initializing the page
 		if ((status = bufMgr->allocPage(filePtr, newPageNo, newPage)) != OK) return status;
 		newPage->init(newPageNo);
@@ -463,11 +464,11 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
 		status = curPage->setNextPage(newPageNo);
 		
 		// We are no longer using the current page, so unpin it
-		if ((status = bufMgr->unPinPage(filePtr, newPageNo, curDirtyFlag)) != OK){
-			// extra things for when  the page is already unpinned?
+		if ((status = bufMgr->unPinPage(filePtr, curPageNo, curDirtyFlag)) != OK){
+			// extra things for when  the page is already unpinned? unpinstatus
 			return status;
 		} 
-		
+
 		// Set the current page to the new one and then try to insert the record
 		curPageNo = newPageNo;
 		curPage = newPage;

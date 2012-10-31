@@ -84,6 +84,7 @@ int main(int argc, char **argv)
             cout << "got err0r status return from insertrecord" << endl;
             cout << "inserted " << i << " records into file dummy1 before error " 
                  << endl;
+			//bufMgr->printSelf();
             error.print(status);
             exit(1);
         }
