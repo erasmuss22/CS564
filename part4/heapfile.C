@@ -313,44 +313,58 @@ const Status HeapFileScan::scanNext(RID& outRid)
 		} */
 
     do{
-		//cout << "3" << endl;
-			validRecord = false;
-			if ((status = curPage->nextRecord(curRec, nextRid)) != OK) {
-				//cout << "4" << endl;
-				
-					if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
-					// a next page exists so we read it and get the first record
-					if (nextPageNo != -1) {
-						//cout << "5" << endl;
-						if ((status = bufMgr->unPinPage(filePtr, curPageNo, curDirtyFlag)) != OK)return status;
 
-						curPageNo = nextPageNo;
+			validRecord = false;
+			
+			// Attempt to get the next record. If it fails, must look towards
+			// next page
+			if ((status = curPage->nextRecord(curRec, nextRid)) != OK) {
+				    
+					// Get the next page
+					if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
+					
+					
+					// Check to see if the next page exists
+					if (nextPageNo != -1) {
+						
+						// Page does exist, so we unpin the current one and read in the next
+						if ((status = bufMgr->unPinPage(filePtr, curPageNo, curDirtyFlag)) != OK)return status;
 						if ((status = bufMgr->readPage(filePtr, nextPageNo, curPage)) != OK) return status;
-							//cout << "5.1" << endl;
+						curPageNo = nextPageNo;
+
+						// Get the first record on the new page. If no error is returned, this
+						// is a valid record and we can check it for a match
 						if ((status = curPage->firstRecord(curRec)) == OK) validRecord = true;
-					}   // a next page doesn't exist, since we have no match just return fileeof
+					}   
+					
+					 // The page doesn't exist, so we return FILEEOF
 					 else {
-						//cout << "6" << endl;
 						return FILEEOF;
 					} 
-			} else {
-				// Getting the nextRecord didn't have an error, so we set curRec
+			} 
+			
+			 // Getting the nextRecord didn't have an error, so we set curRec since this
+			 // is a valid record
+			 else {
 				curRec = nextRid;
 				validRecord = true;
 			}
 			
+			// If a record is valid, we can get the pointer to the actual record and
+			// check for a match
 			if (validRecord == true){
+				
 				if ((status = curPage->getRecord(curRec, rec)) != OK) return status;
 				matched = matchRec(rec);
+				
 				if (matched == true) {
-					//cout << "matched" << endl;
+
 					outRid = curRec;
 					return OK;
+					
 				}
 			}
 	} while (!matched);
-	  //cout << "7" << endl;
-	  return OK;
 	
 
 }
