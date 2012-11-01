@@ -286,31 +286,49 @@ const Status HeapFileScan::scanNext(RID& outRid)
     RID		tmpRid;
     int 	nextPageNo;
     Record      rec;
-	bool    matched = false;
-	bool    validRecord = false;
+	
+	bool    matched = false;    // Do-While loop unil a record is matched
+	bool    validRecord = false; // Only check matches if a record is valid
+	
+		// If the current page is -1, return EOF
 		if (curPageNo == -1) return FILEEOF;
 		
-		
+
 		// get the very first page, looking at the constructor, it looks like
-		// curPage is set, so it will never be NULL
-		/*if (curPage == NULL){
-			//cout << "1" << endl;
+		// curPage is always set, so it will never be NULL unless there was
+		// an error before the scan or endScan was called before scanNext
+		if (curPage == NULL){
+			
+			
+			// Get the first page and check if it's already the EOF
 			curPageNo = headerPage->firstPage;
 			if (curPageNo == -1) return FILEEOF;
+			
+			
+			// It's not EOF so read it in and also store its next page var
 			if ((status = bufMgr->readPage(filePtr, curPageNo, curPage)) != OK) return status;
 			if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
+			
+			
+			// Get the first record. If this returns NORECORDS, unpin the page
+			// and return EOF because if the first page has no records, it is
+			// the EOF
 			if ((status = curPage->firstRecord(curRec)) != OK) {
 				if ((status = bufMgr->unPinPage(filePtr, curPageNo, false)) != OK) return status;
 				curPageNo = -1;
 				return FILEEOF;
 			}
+			
+			
+			// Get the pointer to the record and check if it's a match, then
+			// continue as we would for any other record
 			if ((status = curPage->getRecord(curRec, rec)) != OK) return status;
 			if (matchRec(rec) == true){
 				outRid = curRec;
 				return OK;
 			}
 			
-		} */
+		} 
 
     do{
 
@@ -332,6 +350,7 @@ const Status HeapFileScan::scanNext(RID& outRid)
 						if ((status = bufMgr->readPage(filePtr, nextPageNo, curPage)) != OK) return status;
 						curPageNo = nextPageNo;
 
+
 						// Get the first record on the new page. If no error is returned, this
 						// is a valid record and we can check it for a match
 						if ((status = curPage->firstRecord(curRec)) == OK) validRecord = true;
@@ -350,9 +369,12 @@ const Status HeapFileScan::scanNext(RID& outRid)
 				validRecord = true;
 			}
 			
+			
 			// If a record is valid, we can get the pointer to the actual record and
-			// check for a match
+			// check for a match. If the record isn't valid, it loops around and tries
+			// to find a valid record or runs into an EOF
 			if (validRecord == true){
+				
 				
 				if ((status = curPage->getRecord(curRec, rec)) != OK) return status;
 				matched = matchRec(rec);
@@ -522,6 +544,7 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
 		if ((status = bufMgr->allocPage(filePtr, newPageNo, newPage)) != OK) return status;
 		newPage->init(newPageNo);
 		
+		
 		// Since this will be the new last page, set its next page to point to
 		// -1. Since it only returns OK, no need to check the status. We also
 		// update the header page meta data because it points to a new last page
@@ -529,6 +552,7 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
 		headerPage->lastPage = newPageNo;
 		headerPage->pageCnt += 1; // Added a page, update the page count
 		hdrDirtyFlag = true;
+		
 		
 		// In addition to updating the headerPage meta data, we must set the
 		// current page (the one that is full) to point to the new page to
@@ -545,11 +569,14 @@ const Status InsertFileScan::insertRecord(const Record & rec, RID& outRid)
 		curPageNo = newPageNo;
 		curPage = newPage;
 		if ((status = curPage->insertRecord(rec, rid)) == OK){
+			
+			
 			outRid = rid;		   // return rid of inserted record	
 			hdrDirtyFlag = true;  // Inserted record, thus page is now dirty
 			curDirtyFlag = true;
 			headerPage->recCnt += 1; // update the record count in header page
 			return OK;
+			
 		}
 		return status;
 		
