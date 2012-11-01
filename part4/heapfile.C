@@ -287,6 +287,7 @@ const Status HeapFileScan::scanNext(RID& outRid)
     int 	nextPageNo;
     Record      rec;
 	bool    matched = false;
+	bool    validRecord = false;
 		if (curPageNo == -1) return FILEEOF;
 		
 		
@@ -313,13 +314,12 @@ const Status HeapFileScan::scanNext(RID& outRid)
 
     do{
 		//cout << "3" << endl;
-
+			validRecord = false;
 			if ((status = curPage->nextRecord(curRec, nextRid)) != OK) {
 				//cout << "4" << endl;
 				
-				while (status != OK){
+					if ((status = curPage->getNextPage(nextPageNo)) != OK) return status;
 					// a next page exists so we read it and get the first record
-					status = curPage->getNextPage(nextPageNo);
 					if (nextPageNo != -1) {
 						//cout << "5" << endl;
 						if ((status = bufMgr->unPinPage(filePtr, curPageNo, curDirtyFlag)) != OK)return status;
@@ -327,19 +327,19 @@ const Status HeapFileScan::scanNext(RID& outRid)
 						curPageNo = nextPageNo;
 						if ((status = bufMgr->readPage(filePtr, nextPageNo, curPage)) != OK) return status;
 							//cout << "5.1" << endl;
-						status = curPage->firstRecord(curRec);
+						if ((status = curPage->firstRecord(curRec)) == OK) validRecord = true;
 					}   // a next page doesn't exist, since we have no match just return fileeof
 					 else {
 						//cout << "6" << endl;
 						return FILEEOF;
 					} 
-				}
 			} else {
 				// Getting the nextRecord didn't have an error, so we set curRec
 				curRec = nextRid;
+				validRecord = true;
 			}
 			
-			
+			if (validRecord == true){
 				if ((status = curPage->getRecord(curRec, rec)) != OK) return status;
 				matched = matchRec(rec);
 				if (matched == true) {
@@ -347,6 +347,7 @@ const Status HeapFileScan::scanNext(RID& outRid)
 					outRid = curRec;
 					return OK;
 				}
+			}
 	} while (!matched);
 	  //cout << "7" << endl;
 	  return OK;
