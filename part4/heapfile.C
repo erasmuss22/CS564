@@ -382,12 +382,11 @@ const Status HeapFileScan::scanNext(RID& outRid)
 				if (matched == true) {
 
 					outRid = curRec;
-					return OK;
 					
 				}
 			}
 	} while (!matched);
-	
+	  return OK;
 
 }
 
