@@ -34,6 +34,18 @@ const Status RelCatalog::help(const string & relation)
 
   if (relation.empty()) return UT_Print(RELCATNAME);
 
+  // Get meta data of the relation
+  if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+  
+  // Get all attributes of the relation
+  if ((status = attrCat->getRelInfo(relation, rd.attrCnt, attrs)) != OK){
+	  delete[] attrs;
+	  return status;
+  }
+  
+  for (int i = 0; i < rd.attrCnt; i++){
+	  cout <<
+  }
 
 
   return OK;

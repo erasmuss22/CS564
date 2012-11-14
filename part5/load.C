@@ -34,15 +34,24 @@ const Status UT_Load(const string & relation, const string & fileName)
 
   // get relation data
 
+  if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+  
+  // Get all attributes of the relation
+  if ((status = attrCat->getRelInfo(relation, rd.attrCnt, attrs)) != OK){
+	  delete[] attrs;
+	  return status;
+  }
+  
+  // calculate the width of the record to be loaded later
+  for(i = 0; i < rd.attrCnt; i++) {
+      width += attrs[i].attrLen;
+  }
+  delete[] attrs;
 
-
-
-  // start insertFileScan on relation
-
-
-
-
-
+  // create InsertFileScan for relation
+  iFile = new InsertFileScan(relation, status);
+  if (status != OK) return status;
+  
 
 
 
