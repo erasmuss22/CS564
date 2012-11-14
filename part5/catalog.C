@@ -77,13 +77,7 @@ AttrCatalog::AttrCatalog(Status &status) :
 // nothing should be needed here
 }
 
-/*Returns the attribute descriptor record for attribute attrName in 
- * relation relName. Uses a scan over the underlying heapfile to get all 
- * tuples for relation and check each tuple to find whether it corresponds 
- * to attrName. (Or maybe do it the other way around !) This has to be done 
- this way because a predicated HeapFileScan does not allow conjuncted predicates. Note that 
-  * the tuples in attrcat are of type AttrDesc (structure given above). 
- * */
+
 const Status AttrCatalog::getInfo(const string & relation, 
 				  const string & attrName,
 				  AttrDesc &record)
@@ -93,27 +87,38 @@ const Status AttrCatalog::getInfo(const string & relation,
   RID rid;
   Record rec;
   HeapFileScan*  hfs;
-  AttrDesc* temp;
+  char an[MAXNAME];
+  
 
   if (relation.empty() || attrName.empty()) return BADCATPARM;
 
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
-  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
-  hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
-  while ((status = hfs->scanNext(rid)) != FILEEOF)
+
+  hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
+  while ((status = hfs->scanNext(rid)) == OK)
         {
-            // reconstruct record i
+
             if ((status = hfs->getRecord(rec)) != OK) break;
-			memcpy(temp, rec.data, sizeof rec.data);
-			if (temp.attrName == attrName){
-				memcpy(&record, &rec.data, sizeof rec.data);
+			// Get the attribute name by taking correct offset from
+			// the start of the record (like in dbcreate.C)
+			memcpy(an, (char *) rec.data+MAXNAME, MAXNAME);
+
+			if (strcmp(an, attrName.c_str()) == 0){
+				memcpy((char*)&record, rec.data, sizeof(AttrDesc));
+				hfs->endScan();
 				return OK;
 			}
             
-
         }
 
+		// Didn't find a record
+		hfs->endScan();
+		if(status == FILEEOF) {
+			return ATTRNOTFOUND;
+		} else {
+			return status;
+		}
 
 }
 
@@ -124,13 +129,27 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   InsertFileScan*  ifs;
   Status status;
   Record rec;
+  RelDesc rd;
   
+  rec.length = sizeof(AttrDesc);
+  memcpy(rec.data, &record, rec.length);
   
-  rec.data = &record;
-  rec.length = sizeof record;
+  ifs = new InsertFileScan(ATTRCATNAME, status);
+  if ((status = ifs->insertRecord(rec, rid)) != OK) return status;
   
-  ifs = new InsertfileScan(ATTRCATNAME, status);
-  status = ifs->insertRecord(rec, rid);
+  // Must add the attribute to relCat	
+  // Start by getting the record to update
+  if ((status = relCat->getInfo(record.relName, rd)) != OK) return status;
+
+  // Remove the record from the relCat table
+  if ((status = relCat->removeInfo(record.relName)) != OK) return status;
+				
+  // Increase the attribute count because we are adding 1 attribute
+  rd.attrCnt += 1;
+				
+  // Add back to the table -- by deleting and then adding we
+  // have updated the record
+  if ((status = relCat->addInfo(rd)) != OK) return status;
   
   return status;
   
@@ -147,24 +166,54 @@ const Status AttrCatalog::removeInfo(const string & relation,
   RID rid;
   AttrDesc record;
   HeapFileScan*  hfs;
+  char an[MAXNAME];
+  RelDesc rd;
 
   if (relation.empty() || attrName.empty()) return BADCATPARM;
-
+		
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
-  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
-  hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
-  while ((status = hfs->scanNext(rid)) != FILEEOF)
+
+  hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
+  while ((status = hfs->scanNext(rid)) == OK)
         {
-            // reconstruct record i
+
             if ((status = hfs->getRecord(rec)) != OK) break;
-			memcpy(&temp, &rec.data, sizeof rec.data);
-			if (temp.attrName == attrName){
-				status = hfs.deleteRecord();
+			// Get the attribute name by taking correct offset from
+			// the start of the record (like in dbcreate.C)
+			memcpy(an, (char *) rec.data+MAXNAME, MAXNAME);
+
+			if (strcmp(an, attrName.c_str()) == 0){
+				// Delete the record
+				if ((status = hfs->deleteRecord()) != OK) return status;
+				
+				// Must remove the attribute from relCat	
+				// Start by getting the record to update
+				if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+
+				// Remove the record from the relCat table
+				if ((status = relCat->removeInfo(relation)) != OK) return status;
+				
+				// Decrease the attribute count because we are deleting 1 attribute
+				rd.attrCnt -= 1;
+				
+				// Add back to the table -- by deleting and then adding we
+				// have updated the record
+				if ((status = relCat->addInfo(rd)) != OK) return status;
+
+				hfs->endScan();
+				return OK;
 			}
             
-
         }
+
+		// Didn't find a record
+		hfs->endScan();
+		if(status == FILEEOF) {
+			return ATTRNOTFOUND;
+		} else {
+			return status;
+		}
 
 }
 
@@ -182,21 +231,32 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
-  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
-  hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
+
+  hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   int count = 0;
-  while ((status = hfs->scanNext(rid)) != FILEEOF)
+  while ((status = hfs->scanNext(rid)) == OK)
         {
-            // reconstruct record i
+
             if ((status = hfs->getRecord(rec)) != OK) break;
-			memcpy(&temp, &rec.data, sizeof rec.data);
-			if (temp.attrName == attrName){
-				attrs[count] = temp;
-				count++;
+			// Get the attribute name by taking correct offset from
+			// the start of the record (like in dbcreate.C)
+			memcpy(an, (char *) rec.data+MAXNAME, MAXNAME);
+
+			if (strcmp(an, attrName.c_str()) == 0){
+				memcpy((char*)&record, rec.data, sizeof(AttrDesc));
+				hfs->endScan();
+				return OK;
 			}
             
-
         }
+
+		// Didn't find a record
+		hfs->endScan();
+		if(status == FILEEOF) {
+			return ATTRNOTFOUND;
+		} else {
+			return status;
+		}
 
 
 }
