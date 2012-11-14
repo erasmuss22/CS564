@@ -70,7 +70,7 @@ const Status UT_Load(const string & relation, const string & fileName)
     if ((status = iFile->insertRecord(rec, rid)) != OK) return status;
     records++;
   }
-
+  delete iFile;
   // close heap file and unix file
   if (close(fd) < 0) return UNIXERR;
 

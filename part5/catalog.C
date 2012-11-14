@@ -28,6 +28,8 @@ const Status RelCatalog::getInfo(const string & relation, RelDesc &record)
 	if ((status = scan->getRecord(rec)) != OK) return status;
 	
 	memcpy(&record, rec.data, sizeof rec.data);
+	delete scan;
+	return OK;
   }
   
   delete scan;
@@ -164,7 +166,6 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   // Start by getting the record to update
   if ((status = relCat->getInfo(record.relName, rd)) != OK) return status;
 
-
   // Remove the record from the relCat table
   if ((status = relCat->removeInfo(record.relName)) != OK) return status;
 					
@@ -194,7 +195,6 @@ const Status AttrCatalog::removeInfo(const string & relation,
   RID rid;
   AttrDesc record, temp;
   HeapFileScan*  hfs;
-  char an[MAXNAME];
   RelDesc rd;
 
   if (relation.empty() || attrName.empty()) return BADCATPARM;
@@ -204,20 +204,7 @@ const Status AttrCatalog::removeInfo(const string & relation,
   //Maybe want to return status here?
   if (status != OK) error.print(status);
 
-  hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
-  while ((status = hfs->scanNext(rid)) == OK)
-        {
-
-            if ((status = hfs->getRecord(rec)) != OK) break;
-			// Get the attribute name by taking correct offset from
-			// the start of the record (like in dbcreate.C)
-			memcpy(an, (char *) rec.data+MAXNAME, MAXNAME);
-
-			if (strcmp(an, attrName.c_str()) == 0){
-				
-			}
-            
-        }
+  
   
   //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
   hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
@@ -280,11 +267,12 @@ const Status AttrCatalog::getRelInfo(const string & relation,
   relScan = new HeapFileScan(RELCATNAME, status);
   if (status != OK) error.print(status);
   
+  
   relScan->startScan(0, (int)(sizeof rd.relName), STRING, relation.c_str(), EQ);
+  
   while ((status = relScan->scanNext(rid)) != FILEEOF) {
 	if (status != OK) break;
 	if ( (status = relScan->getRecord(rec)) != OK) break;
-	
 	memcpy(&rd, rec.data, sizeof rec.data);
 	numAttrDesc += rd.attrCnt;
    }
@@ -296,9 +284,7 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 	
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
-
   hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
-
 
   int count = 0;
   while ((status = hfs->scanNext(rid)) == OK)
@@ -313,8 +299,10 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 	
 	// Didn't find a record
 		hfs->endScan();
+		delete hfs;
+		delete relScan;
 		if(status == FILEEOF) {
-			return ATTRNOTFOUND;
+			return OK;
 		} else {
 			return status;
 		}
