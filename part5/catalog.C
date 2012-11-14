@@ -59,7 +59,13 @@ AttrCatalog::AttrCatalog(Status &status) :
 // nothing should be needed here
 }
 
-
+/*Returns the attribute descriptor record for attribute attrName in 
+ * relation relName. Uses a scan over the underlying heapfile to get all 
+ * tuples for relation and check each tuple to find whether it corresponds 
+ * to attrName. (Or maybe do it the other way around !) This has to be done 
+ this way because a predicated HeapFileScan does not allow conjuncted predicates. Note that 
+  * the tuples in attrcat are of type AttrDesc (structure given above). 
+ * */
 const Status AttrCatalog::getInfo(const string & relation, 
 				  const string & attrName,
 				  AttrDesc &record)
@@ -69,10 +75,26 @@ const Status AttrCatalog::getInfo(const string & relation,
   RID rid;
   Record rec;
   HeapFileScan*  hfs;
+  AttrDesc* temp;
 
   if (relation.empty() || attrName.empty()) return BADCATPARM;
 
+  hfs = new HeapFileScan(ATTRCATNAME, status);
+  if (status != OK) error.print(status);
+  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
+  hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
+  while ((status = hfs->scanNext(rid)) != FILEEOF)
+        {
+            // reconstruct record i
+            if ((status = hfs->getRecord(rec)) != OK) break;
+			memcpy(temp, rec.data, sizeof rec.data);
+			if (temp.attrName == attrName){
+				memcpy(&record, &rec.data, sizeof rec.data);
+				return OK;
+			}
+            
 
+        }
 
 
 }
@@ -83,9 +105,17 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   RID rid;
   InsertFileScan*  ifs;
   Status status;
-
-
-
+  Record rec;
+  
+  
+  rec.data = &record;
+  rec.length = sizeof record;
+  
+  ifs = new InsertfileScan(ATTRCATNAME, status);
+  status = ifs->insertRecord(rec, rid);
+  
+  return status;
+  
 
 
 }
@@ -102,6 +132,22 @@ const Status AttrCatalog::removeInfo(const string & relation,
 
   if (relation.empty() || attrName.empty()) return BADCATPARM;
 
+  hfs = new HeapFileScan(ATTRCATNAME, status);
+  if (status != OK) error.print(status);
+  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
+  hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
+  while ((status = hfs->scanNext(rid)) != FILEEOF)
+        {
+            // reconstruct record i
+            if ((status = hfs->getRecord(rec)) != OK) break;
+			memcpy(&temp, &rec.data, sizeof rec.data);
+			if (temp.attrName == attrName){
+				status = hfs.deleteRecord();
+			}
+            
+
+        }
+
 }
 
 
@@ -116,7 +162,23 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 
   if (relation.empty()) return BADCATPARM;
 
+  hfs = new HeapFileScan(ATTRCATNAME, status);
+  if (status != OK) error.print(status);
+  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
+  hfs->startScan(0, sizeof record.relName, STRING, relation.c_str(), EQ);
+  int count = 0;
+  while ((status = hfs->scanNext(rid)) != FILEEOF)
+        {
+            // reconstruct record i
+            if ((status = hfs->getRecord(rec)) != OK) break;
+			memcpy(&temp, &rec.data, sizeof rec.data);
+			if (temp.attrName == attrName){
+				attrs[count] = temp;
+				count++;
+			}
+            
 
+        }
 
 
 }
