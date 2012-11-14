@@ -32,8 +32,9 @@ const Status RelCatalog::help(const string & relation)
   AttrDesc *attrs;
   int attrCnt;
 
+  cout << "1" << endl;
   if (relation.empty()) return UT_Print(RELCATNAME);
-
+  cout << "2" << endl;
   // Get meta data of the relation
   if ((status = relCat->getInfo(relation, rd)) != OK) return status;
   
@@ -44,7 +45,7 @@ const Status RelCatalog::help(const string & relation)
   }
   
   for (int i = 0; i < rd.attrCnt; i++){
-	  cout <<
+	  
   }
 
 

@@ -17,7 +17,7 @@ const Status RelCatalog::createRel(const string & relation,
 
   
   // make sure that a relation with the same name doesn't already exist
-  if ((status = this->getInfo(relation, rd)) == OK) return RELEXISTS;
+  if ((status = relCat->getInfo(relation, rd)) == OK) return RELEXISTS;
   
   // fill in the RelDesc and add to relCat. Similar to dbcreate.C
   strcpy(rd.relName, relation.c_str());

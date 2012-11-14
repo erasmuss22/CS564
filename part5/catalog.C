@@ -26,11 +26,13 @@ const Status RelCatalog::getInfo(const string & relation, RelDesc &record)
 	if (status != OK) return status;
 	
 	if ((status = scan->getRecord(rec)) != OK) return status;
+	
 	memcpy(&record, rec.data, sizeof rec.data);
   }
   
-  if (status != FILEEOF && status != OK) return status;
-  else return OK;
+  delete scan;
+  
+  return RELNOTFOUND;
 
 }
 
@@ -49,6 +51,8 @@ const Status RelCatalog::addInfo(RelDesc & record)
   rec.length = sizeof(RelDesc);
   
   status = ifs->insertRecord(rec, rid);
+  
+  delete ifs;
   
   return status;
 
@@ -73,6 +77,8 @@ const Status RelCatalog::removeInfo(const string & relation)
 	
     if ( (status = hfs->deleteRecord()) != OK) return status;
   }
+  
+  delete hfs;
   
   if (status != FILEEOF && status != OK) return status;
   else return OK;
@@ -118,6 +124,7 @@ const Status AttrCatalog::getInfo(const string & relation,
 			memcpy(&temp, rec.data, sizeof rec.data);
 			if (temp.attrName == attrName){
 				memcpy(&record, &rec.data, sizeof rec.data);
+				delete hfs;
 				return OK;
 			}
             
@@ -125,6 +132,7 @@ const Status AttrCatalog::getInfo(const string & relation,
 
 		// Didn't find a record
 		hfs->endScan();
+		delete hfs;
 		if(status == FILEEOF) {
 			return ATTRNOTFOUND;
 		} else {
@@ -142,25 +150,34 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   Record rec;
   RelDesc rd;
   
+  
+  
   rec.length = sizeof(AttrDesc);
-  memcpy(rec.data, &record, rec.length);
+  rec.data = &record;
+  
   
   ifs = new InsertFileScan(ATTRCATNAME, status);
   if ((status = ifs->insertRecord(rec, rid)) != OK) return status;
+  
   
   // Must add the attribute to relCat	
   // Start by getting the record to update
   if ((status = relCat->getInfo(record.relName, rd)) != OK) return status;
 
+
   // Remove the record from the relCat table
   if ((status = relCat->removeInfo(record.relName)) != OK) return status;
-				
+					
+			
   // Increase the attribute count because we are adding 1 attribute
   rd.attrCnt += 1;
 				
   // Add back to the table -- by deleting and then adding we
   // have updated the record
   if ((status = relCat->addInfo(rd)) != OK) return status;
+  
+  
+  delete ifs;
   
   return status;
   
@@ -229,6 +246,7 @@ const Status AttrCatalog::removeInfo(const string & relation,
 	  if ((status = relCat->addInfo(rd)) != OK) return status;
 
 	  hfs->endScan();
+	  delete hfs;
 	  return OK;
     }
   }
@@ -236,6 +254,7 @@ const Status AttrCatalog::removeInfo(const string & relation,
 
 		// Didn't find a record
 		hfs->endScan();
+		delete hfs;
 		if(status == FILEEOF) {
 			return ATTRNOTFOUND;
 		} else {
