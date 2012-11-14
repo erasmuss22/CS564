@@ -133,7 +133,7 @@ const Status AttrCatalog::getInfo(const string & relation,
         }
 
 		// Didn't find a record
-		hfs->endScan();
+		//hfs->endScan();
 		delete hfs;
 		if(status == FILEEOF) {
 			return ATTRNOTFOUND;
@@ -232,7 +232,7 @@ const Status AttrCatalog::removeInfo(const string & relation,
 	  // have updated the record
 	  if ((status = relCat->addInfo(rd)) != OK) return status;
 
-	  hfs->endScan();
+	  //hfs->endScan();
 	  delete hfs;
 	  return OK;
     }
@@ -240,7 +240,7 @@ const Status AttrCatalog::removeInfo(const string & relation,
 
 
 		// Didn't find a record
-		hfs->endScan();
+		//hfs->endScan();
 		delete hfs;
 		if(status == FILEEOF) {
 			return ATTRNOTFOUND;
@@ -298,13 +298,13 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 
 	
 	// Didn't find a record
-		hfs->endScan();
+		//hfs->endScan();
 		delete hfs;
 		delete relScan;
 		if(status == FILEEOF) {
 			return OK;
 		} else {
-			return status;
+			return OK;
 		}
 }
 
