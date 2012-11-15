@@ -30,7 +30,6 @@ const Status RelCatalog::destroyRel(const string & relation)
 	  delete[] ad;
 	  return status;
   }
-  
   // Delete all attributes of the relation
   for (int i = 0; i < rd.attrCnt; i++) {
         status = attrCat->removeInfo(relation, ad[i].attrName);

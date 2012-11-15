@@ -8,7 +8,6 @@ const Status RelCatalog::createRel(const string & relation,
   Status status;
   RelDesc rd;
   AttrDesc ad;
-
   if (relation.empty() || attrCnt < 1)
     return BADCATPARM;
 
@@ -21,12 +20,13 @@ const Status RelCatalog::createRel(const string & relation,
   
   // fill in the RelDesc and add to relCat. Similar to dbcreate.C
   strcpy(rd.relName, relation.c_str());
-  rd.attrCnt = attrCnt;
+  rd.attrCnt = 0; // every attribute added will update this
   if ((status = relCat->addInfo(rd)) != OK) return status;
   
   // fill the AttrDesc with attributes like in dbcreate.C
   for (int i = 0; i < attrCnt; i++) {
         strcpy(ad.attrName, attrList[i].attrName);
+		cout << ad.attrName << endl;
         strcpy(ad.relName, attrList[i].relName);
         ad.attrLen = attrList[i].attrLen;
         ad.attrType = attrList[i].attrType;

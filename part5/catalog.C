@@ -123,7 +123,7 @@ const Status AttrCatalog::getInfo(const string & relation,
             if ((status = hfs->getRecord(rec)) != OK) break;
 			memcpy(&temp, rec.data, sizeof(AttrDesc));
 			if (temp.attrName == attrName){
-				memcpy(&record, &rec.data, sizeof(AttrDesc));
+				memcpy(&record, rec.data, sizeof(AttrDesc));
 				delete hfs;
 				return OK;
 			}
@@ -149,7 +149,6 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   Status status;
   Record rec;
   RelDesc rd;
-  
   
   
   rec.length = sizeof(AttrDesc);
@@ -194,9 +193,8 @@ const Status AttrCatalog::removeInfo(const string & relation,
   AttrDesc record, temp;
   HeapFileScan*  hfs;
   RelDesc rd;
-
-  if (relation.empty() || attrName.empty()) return BADCATPARM;
-		
+  
+  if (relation.empty() || attrName.empty()) return BADCATPARM;	
   hfs = new HeapFileScan(ATTRCATNAME, status);
   
   //Maybe want to return status here?
@@ -208,11 +206,11 @@ const Status AttrCatalog::removeInfo(const string & relation,
   hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   while ((status = hfs->scanNext(rid)) != FILEEOF)
   {
-    // reconstruct record i
+	// reconstruct record i
      if ((status = hfs->getRecord(rec)) != OK) break;
-    memcpy(&temp, &rec.data, sizeof(AttrDesc));
+    memcpy(&temp, rec.data, sizeof(AttrDesc));
     if (temp.attrName == attrName){
-	  status = hfs->deleteRecord();
+
 	  // Delete the record
 	  if ((status = hfs->deleteRecord()) != OK) return status;
 				
@@ -287,7 +285,7 @@ const Status AttrCatalog::getRelInfo(const string & relation,
         {
 
             if ((status = hfs->getRecord(rec)) != OK) break;
-			memcpy(&attrs[count], &rec.data, sizeof(AttrDesc));
+			memcpy(&attrs[count], rec.data, sizeof(AttrDesc));
 			
             count++;
 
