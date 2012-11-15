@@ -165,7 +165,6 @@ const int HeapFile::getRecCnt() const
 // is unpinned and the required page is read into the buffer pool
 // and pinned.  returns a pointer to the record via the rec parameter
 
-
 const Status HeapFile::getRecord(const RID &  rid, Record & rec)
 {
     Status status;
