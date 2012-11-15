@@ -41,12 +41,9 @@ const Status RelCatalog::help(const string & relation)
 	  delete[] attrs;
 	  return status;
   }
+  cout << "| " << "relName " << "attrName " << "offset " << "type " << "length " << "|" << endl;
   for (int i = 0; i < rd.attrCnt; i++){
-	  cout << attrs[i].relName << endl;
-	  cout << attrs[i].attrName << endl;
-	  cout << "offset " << attrs[i].attrOffset << endl;
-	  cout << "type " << attrs[i].attrType << endl;
-	  cout << "length " << attrs[i].attrLen << endl;
+	  cout << attrs[i].relName << " | " << attrs[i].attrName << " | " << attrs[i].attrOffset << " | " << attrs[i].attrType << " | " << attrs[i].attrLen << endl;
 	  
   }
   delete[] attrs;
