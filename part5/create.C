@@ -14,6 +14,13 @@ const Status RelCatalog::createRel(const string & relation,
   if (relation.length() >= sizeof rd.relName)
     return NAMETOOLONG;
 
+  for (int i = 0; i < attrCnt; i++) {
+	    if (sizeof(attrList[i].attrName) > MAXNAME) return NAMETOOLONG;
+		if (attrList[i].attrType == STRING){
+			if (attrList[i].attrLen > MAXSTRINGLEN) return ATTRTOOLONG;
+		}
+  }
+  
   
   // make sure that a relation with the same name doesn't already exist
   if ((status = relCat->getInfo(relation, rd)) == OK) return RELEXISTS;
@@ -25,8 +32,11 @@ const Status RelCatalog::createRel(const string & relation,
   
   // fill the AttrDesc with attributes like in dbcreate.C
   for (int i = 0; i < attrCnt; i++) {
+		if ((status = attrCat->getInfo(relation, attrList[i].attrName, ad)) == OK){ 
+			relCat->destroyRel(relation);
+			return DUPLATTR;
+		}
         strcpy(ad.attrName, attrList[i].attrName);
-		cout << ad.attrName << endl;
         strcpy(ad.relName, attrList[i].relName);
         ad.attrLen = attrList[i].attrLen;
         ad.attrType = attrList[i].attrType;
@@ -36,6 +46,19 @@ const Status RelCatalog::createRel(const string & relation,
 		   ad.attrOffset += attrList[i-1].attrLen;
 		}
         if ((status = attrCat->addInfo(ad)) != OK) break;
+		// Must add the attribute to relCat	
+		  // Start by getting the record to update
+		  if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+
+		  // Remove the record from the relCat table
+		  if ((status = relCat->removeInfo(relation)) != OK) return status;
+							
+					
+		  // Increase the attribute count because we are adding 1 attribute
+		  rd.attrCnt += 1;
+		  // Add back to the table -- by deleting and then adding we
+		  // have updated the record
+		  if ((status = relCat->addInfo(rd)) != OK) return status;
     }
   
     // create a HeapFile instance to hold tuples of the relation

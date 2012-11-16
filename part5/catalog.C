@@ -48,8 +48,9 @@ const Status RelCatalog::addInfo(RelDesc & record)
   ifs = new InsertFileScan(RELCATNAME, status);
   if (status != OK) return status;
   
-  rec.data = &record;
   rec.length = sizeof(RelDesc);
+  rec.data = &record;
+  
   
   status = ifs->insertRecord(rec, rid);
   
@@ -159,22 +160,6 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   if ((status = ifs->insertRecord(rec, rid)) != OK) return status;
   
   
-  // Must add the attribute to relCat	
-  // Start by getting the record to update
-  if ((status = relCat->getInfo(record.relName, rd)) != OK) return status;
-
-  // Remove the record from the relCat table
-  if ((status = relCat->removeInfo(record.relName)) != OK) return status;
-					
-			
-  // Increase the attribute count because we are adding 1 attribute
-  rd.attrCnt += 1;
-				
-  // Add back to the table -- by deleting and then adding we
-  // have updated the record
-  if ((status = relCat->addInfo(rd)) != OK) return status;
-  
-  
   delete ifs;
   
   return status;
@@ -210,24 +195,9 @@ const Status AttrCatalog::removeInfo(const string & relation,
      if ((status = hfs->getRecord(rec)) != OK) break;
     memcpy(&temp, rec.data, sizeof(AttrDesc));
     if (temp.attrName == attrName){
-
 	  // Delete the record
 	  if ((status = hfs->deleteRecord()) != OK) return status;
 				
-	  // Must remove the attribute from relCat	
-	  // Start by getting the record to update
-	  if ((status = relCat->getInfo(relation, rd)) != OK) return status;
-
-	  // Remove the record from the relCat table
-	  if ((status = relCat->removeInfo(relation)) != OK) return status;
-				
-	  // Decrease the attribute count because we are deleting 1 attribute
-	  rd.attrCnt -= 1;
-				
-	  // Add back to the table -- by deleting and then adding we
-	  // have updated the record
-	  if ((status = relCat->addInfo(rd)) != OK) return status;
-
 	  //hfs->endScan();
 	  delete hfs;
 	  return OK;
@@ -254,27 +224,15 @@ const Status AttrCatalog::getRelInfo(const string & relation,
   Status status;
   RID rid;
   Record rec;
-  HeapFileScan*  hfs, *relScan;
+  HeapFileScan*  hfs;
   RelDesc rd;
   int numAttrDesc = 0;
 
   if (relation.empty()) return BADCATPARM;
-
-  relScan = new HeapFileScan(RELCATNAME, status);
-  if (status != OK) error.print(status);
-  
-  
-  relScan->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
-  
-  while ((status = relScan->scanNext(rid)) != FILEEOF) {
-	if (status != OK) break;
-	if ( (status = relScan->getRecord(rec)) != OK) break;
-	memcpy(&rd, rec.data, sizeof(RelDesc));
-	numAttrDesc += rd.attrCnt;
-   }
-   
-   if (status != FILEEOF && status != OK) return status;
-   attrs = new AttrDesc[numAttrDesc];
+ 
+   if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+   attrCnt = rd.attrCnt;
+   attrs = new AttrDesc[attrCnt];
 	
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
@@ -295,7 +253,6 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 	// Didn't find a record
 		//hfs->endScan();
 		delete hfs;
-		delete relScan;
 		if(status == FILEEOF) {
 			return OK;
 		} else {

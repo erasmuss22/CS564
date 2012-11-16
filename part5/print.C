@@ -86,11 +86,11 @@ const Status UT_Print(string relation)
 
   // get relation data
   if ((status = relCat->getInfo(relation, rd)) != OK) return status;
-
+  
   // get attribute data
   if ((status = attrCat->getRelInfo(rd.relName, attrCnt, attrs)) != OK)
     return status;
-
+  cout << attrCnt << endl;
   // compute width of output columns
 
   int *attrWidth;
