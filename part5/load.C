@@ -32,28 +32,29 @@ const Status UT_Load(const string & relation, const string & fileName)
   if ((fd = open(fileName.c_str(), O_RDONLY, 0)) < 0)
     return UNIXERR;
 
-  // get relation data
 
+  // Get the relation data and store it in rd
   if ((status = relCat->getInfo(relation, rd)) != OK) return status;
-  
-  // Get all attributes of the relation
+
+
+  // Using rd, get all the attributes of the relation
   if ((status = attrCat->getRelInfo(relation, rd.attrCnt, attrs)) != OK){
 	  delete[] attrs;
 	  return status;
   }
   
-  // calculate the width of the record to be loaded later
+  
+  // Sum the widths to be used with the code provided
   for(i = 0; i < rd.attrCnt; i++) {
       width += attrs[i].attrLen;
   }
   delete[] attrs;
 
+
   // create InsertFileScan for relation
   iFile = new InsertFileScan(relation, status);
   if (status != OK) return status;
   
-
-
 
   // allocate buffer to hold record read from unix file
   char *record;
