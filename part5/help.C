@@ -52,12 +52,19 @@ const Status RelCatalog::help(const string & relation)
   
   
   
-  
-  
-  
   for (int i = 0; i < rd.attrCnt; i++){
-	  //cout << attrs[i].relName << " | " << attrs[i].attrName << " | " << attrs[i].attrOffset << " | " << attrs[i].attrType << " | " << attrs[i].attrLen << endl;
-	  printf("|%-32s|%-32s|%-8i|%-8i|%-8i|\n", attrs[i].relName, attrs[i].attrName, attrs[i].attrOffset, attrs[i].attrType, attrs[i].attrLen);
+	  switch(attrs[i].attrType) {
+		case 0:
+		   printf("|%-32s|%-32s|%-8i|%-8s|%-8i|\n", attrs[i].relName, attrs[i].attrName, attrs[i].attrOffset, "string", attrs[i].attrLen);
+		   break;
+		case 1:
+		  printf("|%-32s|%-32s|%-8i|%-8s|%-8i|\n", attrs[i].relName, attrs[i].attrName, attrs[i].attrOffset, "int", attrs[i].attrLen);
+		  break;
+		case 2:
+		  printf("|%-32s|%-32s|%-8i|%-8s|%-8i|\n", attrs[i].relName, attrs[i].attrName, attrs[i].attrOffset, "float", attrs[i].attrLen);
+		  break;
+      }
+	  
   }
   delete[] attrs;
 
