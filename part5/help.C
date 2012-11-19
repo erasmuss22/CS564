@@ -36,6 +36,8 @@ const Status RelCatalog::help(const string & relation)
   
   // Get meta data of the relation
   if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+  
+  
   // Get all attributes of the relation
   if ((status = attrCat->getRelInfo(relation, rd.attrCnt, attrs)) != OK){
 	  delete[] attrs;
@@ -43,6 +45,7 @@ const Status RelCatalog::help(const string & relation)
   }
   
   
+  // Print a header to the table and put ---- to underline it
   int i;
   printf("|%-32s|%-32s|%-8s|%-8s|%-8s|\n", "relname", "attrName", "offset", "type", "length");
   for(i = 0; i < 94; i++) {
@@ -51,7 +54,8 @@ const Status RelCatalog::help(const string & relation)
   printf("\n");
   
   
-  
+  // Print each tuple checking its attrType in the switch statement to output the word instead
+  // of the number associated with it
   for (int i = 0; i < rd.attrCnt; i++){
 	  switch(attrs[i].attrType) {
 		case 0:

@@ -19,8 +19,14 @@ const Status RelCatalog::getInfo(const string & relation, RelDesc &record)
   HeapFileScan* scan = new HeapFileScan(RELCATNAME, status);
   if (status != OK) return status;
   
+  
+  // Scan for all tuples with the relation name passed into the
+  // function
   scan->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   
+  
+  // Search until a record is found and copy it into the record
+  // parameter for return
   while( (status = scan->scanNext(rid)) != FILEEOF ) {
 	if (status != OK) return status;
 	
@@ -31,8 +37,8 @@ const Status RelCatalog::getInfo(const string & relation, RelDesc &record)
 	return OK;
   }
   
+  // EOF reached, so relation wasn't found
   delete scan;
-  
   return RELNOTFOUND;
 
 }
@@ -45,17 +51,20 @@ const Status RelCatalog::addInfo(RelDesc & record)
   Status status;
   Record rec;
   
+  // Start an InsertFileScan
   ifs = new InsertFileScan(RELCATNAME, status);
   if (status != OK) return status;
   
+  
+  // Copy the record data into an actual record
   rec.length = sizeof(RelDesc);
   rec.data = &record;
   
   
+  // Insert the record
   status = ifs->insertRecord(rec, rid);
   
   delete ifs;
-  
   return status;
 
 }
@@ -68,15 +77,18 @@ const Status RelCatalog::removeInfo(const string & relation)
   RelDesc rd;
   if (relation.empty()) return BADCATPARM;
   
+  
   hfs = new HeapFileScan(RELCATNAME, status);
   if (status != OK) return status;
   
-  hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   
+  // find the record with the given relation name and delete it
+  hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   while( (status = hfs->scanNext(rid)) != FILEEOF ) {
-	if (status != OK) return status;
 	
+	if (status != OK) return status;
     if ( (status = hfs->deleteRecord()) != OK) return status;
+	
   }
   
   delete hfs;
@@ -117,12 +129,19 @@ const Status AttrCatalog::getInfo(const string & relation,
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
 
+
+  // Scan for all attrCat tuples that match the relation string
   hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   while ((status = hfs->scanNext(rid)) == OK)
         {
 
+			// get the record and copy its data
             if ((status = hfs->getRecord(rec)) != OK) break;
 			memcpy(&temp, rec.data, sizeof(AttrDesc));
+			
+			
+			// if the attrName of the record is the same as the input
+			// parameter, copy it into the return value and return
 			if (temp.attrName == attrName){
 				memcpy(&record, rec.data, sizeof(AttrDesc));
 				delete hfs;
@@ -132,7 +151,6 @@ const Status AttrCatalog::getInfo(const string & relation,
         }
 
 		// Didn't find a record
-		//hfs->endScan();
 		delete hfs;
 		if(status == FILEEOF) {
 			return ATTRNOTFOUND;
@@ -149,13 +167,15 @@ const Status AttrCatalog::addInfo(AttrDesc & record)
   InsertFileScan* ifs;
   Status status;
   Record rec;
-  RelDesc rd;
   
   
+  // copy the record data into a record
   rec.length = sizeof(AttrDesc);
   rec.data = &record;
   
   
+  // insert the record. All bookkeeping is done by the calling method,
+  // so no need to do it here
   ifs = new InsertFileScan(ATTRCATNAME, status);
   if ((status = ifs->insertRecord(rec, rid)) != OK) return status;
   
@@ -182,37 +202,40 @@ const Status AttrCatalog::removeInfo(const string & relation,
   if (relation.empty() || attrName.empty()) return BADCATPARM;	
   hfs = new HeapFileScan(ATTRCATNAME, status);
   
-  //Maybe want to return status here?
+
   if (status != OK) error.print(status);
 
   
   
-  //attrCat->startScan(sizeof(record.relName), sizeof(record.attrName), STRING, relation, EQ);
+  // start a scan searching for the relation name
   hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
   while ((status = hfs->scanNext(rid)) != FILEEOF)
   {
-	// reconstruct record i
+
+	  // get and copy the record data into an AttrDesc
      if ((status = hfs->getRecord(rec)) != OK) break;
-    memcpy(&temp, rec.data, sizeof(AttrDesc));
-    if (temp.attrName == attrName){
-	  // Delete the record
+     memcpy(&temp, rec.data, sizeof(AttrDesc));
+	 
+	 
+	 // if the attribute name is the same as the input param,
+	 // delete the record
+     if (temp.attrName == attrName){
+		 
 	  if ((status = hfs->deleteRecord()) != OK) return status;
 				
-	  //hfs->endScan();
 	  delete hfs;
 	  return OK;
     }
   }
 
 
-		// Didn't find a record
-		//hfs->endScan();
-		delete hfs;
-		if(status == FILEEOF) {
-			return ATTRNOTFOUND;
-		} else {
-			return status;
-		}
+	// Didn't find a record
+	 delete hfs;
+	 if(status == FILEEOF) {
+		return ATTRNOTFOUND;
+	 } else {
+	 	return status;
+	 }
 
 }
 
@@ -230,34 +253,37 @@ const Status AttrCatalog::getRelInfo(const string & relation,
 
   if (relation.empty()) return BADCATPARM;
  
-   if ((status = relCat->getInfo(relation, rd)) != OK) return status;
-   attrCnt = rd.attrCnt;
-   attrs = new AttrDesc[attrCnt];
+  // check if the relation exists. If it does, get its attrCnt and
+  // initialize the array for storing all tuples
+  if ((status = relCat->getInfo(relation, rd)) != OK) return status;
+  attrCnt = rd.attrCnt;
+  attrs = new AttrDesc[attrCnt];
 	
+	
+  // start a scan searching for all tuples of the relation name	
   hfs = new HeapFileScan(ATTRCATNAME, status);
   if (status != OK) error.print(status);
   hfs->startScan(0, MAXNAME, STRING, relation.c_str(), EQ);
 
+  
+  // get every record and store it in the array
   int count = 0;
-  while ((status = hfs->scanNext(rid)) == OK)
-        {
+  while ((status = hfs->scanNext(rid)) == OK) {
 
             if ((status = hfs->getRecord(rec)) != OK) break;
 			memcpy(&attrs[count], rec.data, sizeof(AttrDesc));
-			
             count++;
 
-        }
+  }
 
 	
 	// Didn't find a record
-		//hfs->endScan();
-		delete hfs;
-		if(status == FILEEOF) {
-			return OK;
-		} else {
-			return OK;
-		}
+	delete hfs;
+	if(status == FILEEOF) {
+		return OK;
+	} else {
+		return OK;
+	}
 }
 
 
