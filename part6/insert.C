@@ -20,6 +20,7 @@ const Status QU_Insert(const string & relation,
 	AttrDesc* rel = new AttrDesc[attrCnt];
 	Record rec;
 	RelDesc rd;
+	int tmpCnt;
 	
 	if ((status = relCat->getInfo(relation, rd)) != OK){
 			delete attrs;
@@ -27,35 +28,63 @@ const Status QU_Insert(const string & relation,
 			return status;
 		}
 		
-	if ((status = attrCat->getRelInfo(relation, rd.attrCnt, rel)) != OK){
+	if ((status = attrCat->getRelInfo(relation, tmpCnt, rel)) != OK){
 			delete attrs;
 			delete rel;
 			return status;
 	}
 	
 	int width = 0;
-	for (int i = 0; i < rd.attrCnt; i++){
+	for (int i = 0; i < tmpCnt; i++){
 		width += rel[i].attrLen;
 	}
 	
-	char outputData[width];
+	char* outputData = new char[width];
 	rec.data = (void *) outputData;
 	rec.length = width;
 	
-	
 	for (int i = 0; i < attrCnt; i++){
-		if ((status = attrCat->getInfo(relation, attrList[i].attrName, attrs[i])) != OK){
-			delete attrs;
-			delete rel;
-			return status;
+			if ((status = attrCat->getInfo(relation, attrList[i].attrName, attrs[i])) != OK){
+				delete attrs;
+				delete rel;
+				return status;
+			}
+	}
+	
+	for (int j = 0; j < tmpCnt; j++){
+		for (int i = 0; i < attrCnt; i++){
+			/*if ((status = attrCat->getInfo(relation, attrList[i].attrName, attrs[i])) != OK){
+				delete attrs;
+				delete rel;
+				return status;
+			}*/
+			
+			int tempi;
+			float tempf;
+			if (string(rel[j].attrName) == string(attrs[i].attrName)){
+				cout << "here" << endl;
+				switch (attrs[i].attrType) {
+						case INTEGER:
+							tempi = atoi((char*) attrList[i].attrValue);
+							memcpy(outputData + attrs[i].attrOffset,
+								   &tempi,
+								   attrs[i].attrLen);
+							break;
+						case FLOAT:
+							tempf = atof((char*) attrList[i].attrValue);
+							memcpy(outputData + attrs[i].attrOffset,
+								   &tempf,
+								   attrs[i].attrLen);
+							break;
+						case STRING:
+							memcpy(outputData + attrs[i].attrOffset,
+								   attrList[i].attrValue,
+								   attrs[i].attrLen);
+							break;
+						}
+			}
 		}
-		cout << attrs[i].attrLen << endl;
-		cout << attrs[i].attrOffset << endl;
-		cout << &(attrList[i].attrValue) << endl;
-		cout << attrList[i].attrType << endl;
-		memcpy(outputData + attrs[i].attrOffset,
-                           attrList[i].attrValue,
-                           attrs[i].attrLen);
+		
 	}
 	
 	
@@ -77,9 +106,10 @@ const Status QU_Insert(const string & relation,
 		return status;
 	}
 	
+	delete[] outputData;
 	delete ifs;
-	delete attrs;
-	delete rel;
+	delete[] attrs;
+	delete[] rel;
 	
 	return OK;
 
