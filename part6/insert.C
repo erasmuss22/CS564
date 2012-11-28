@@ -34,11 +34,17 @@ const Status QU_Insert(const string & relation,
 			return status;
 	}
 	
+	if (attrCnt != tmpCnt){
+		delete[] attrs;
+		delete[] rel;
+		return ATTRTYPEMISMATCH;
+	}
+	
 	int width = 0;
 	for (int i = 0; i < tmpCnt; i++){
 		width += rel[i].attrLen;
 	}
-	
+
 	char* outputData = new char[width];
 	rec.data = (void *) outputData;
 	rec.length = width;
@@ -51,7 +57,7 @@ const Status QU_Insert(const string & relation,
 			}
 	}
 	
-	for (int j = 0; j < tmpCnt; j++){
+	//for (int j = 0; j < tmpCnt; j++){
 		for (int i = 0; i < attrCnt; i++){
 			/*if ((status = attrCat->getInfo(relation, attrList[i].attrName, attrs[i])) != OK){
 				delete attrs;
@@ -61,7 +67,7 @@ const Status QU_Insert(const string & relation,
 			
 			int tempi;
 			float tempf;
-			if (string(rel[j].attrName) == string(attrs[i].attrName)){
+		//	if (string(rel[j].attrName) == string(attrs[i].attrName)){
 				cout << "here" << endl;
 				switch (attrs[i].attrType) {
 						case INTEGER:
@@ -82,10 +88,10 @@ const Status QU_Insert(const string & relation,
 								   attrs[i].attrLen);
 							break;
 						}
-			}
+			//}
 		}
 		
-	}
+	//}
 	
 	
 	

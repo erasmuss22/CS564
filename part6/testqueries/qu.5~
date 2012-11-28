@@ -34,9 +34,9 @@ insert into stars (real_name,soapid, starid, plays) values ("Bonarrigo, Laura", 
 
 print table stars;
 
-
+/*
 insert into stars (starid,soapid) values (123,  33);
 
 print table stars;
 
-
+*/
