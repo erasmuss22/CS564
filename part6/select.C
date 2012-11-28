@@ -1,5 +1,7 @@
 #include "catalog.h"
 #include "query.h"
+#include "stdio.h"
+#include "stdlib.h"
 
 
 // forward declaration
@@ -46,22 +48,24 @@ const Status QU_Select(const string & result,
 	if (attr != NULL){
 		
 		// Get and store the AttrDesc for the relName and attrName of the attr
-		if((status = attrCat->getInfo(attr.relName, attr.attrName, ad)) != OK) { 
+		if((status = attrCat->getInfo(attr->relName, attr->attrName, ad)) != OK) { 
 			delete[] attrs;
 			return status;
 		}
 		
 		// get the attribute type and store it as a filter
+		float tempf;
+		int tempi;
 		switch(ad.attrType){
 			case FLOAT:
 			
-			    float tempf = atof(attrValue);
+			    tempf = atof(attrValue);
 			    filter = (char *)&tempf;
 			    break;
 				
 		    case INTEGER:
 			
-			    int tempi = atoi(attrValue);
+			    tempi = atoi(attrValue);
 			    filter = (char *)&tempi;
 			    break;
 				
@@ -95,8 +99,6 @@ const Status QU_Select(const string & result,
 
 
 const Status ScanSelect(const string & result, 
-#include "stdio.h"
-#include "stdlib.h"
 			const int projCnt, 
 			const AttrDesc projNames[],
 			const AttrDesc *attrDesc, 
@@ -108,34 +110,54 @@ const Status ScanSelect(const string & result,
     
 	Status status;
 	RID rid;
+	RID temprid;
 	Record rec;
 	
-	HeapFileScan* hfs = new HeapFileScan(result, status);
+	InsertFileScan* ifs = new InsertFileScan(result, status);
+	HeapFileScan* hfs;
+	if (attrDesc != NULL){
+		hfs = new HeapFileScan(attrDesc->relName, status);
+	} else {
+		if (projCnt > 0){
+			hfs = new HeapFileScan(projNames[0].relName, status);
+		}
+	}
     if(status != OK) {
+		delete ifs;
 		delete hfs;
 		return status;
 	}
 	
 	if (filter == NULL){
-		if ((status = hfs->startScan(0, 0, (DataType) attrDesc->attrType, filter, op)) != OK){
+		if ((status = hfs->startScan(0, 0, (Datatype)attrDesc->attrType, filter, op)) != OK){
+			delete ifs;
 			delete hfs;
 			return status;
 		}
 	} else {
-		if ((status = hfs->startScan(attrDesc->attrOffset, reclen, (DataType)0, filter, op)) != OK){
+		if ((status = hfs->startScan(attrDesc->attrOffset, reclen, (Datatype)0, filter, op)) != OK){
+			delete ifs;
 			delete hfs;
 			return status;
 		}
 	}
 	
-	while((status = hfs.scanNext(rid)) == OK){
+	while((status = hfs->scanNext(rid)) == OK){
 		
-		if((status = hfs.getRecord(rec)) != OK) {
+		if((status = hfs->getRecord(rec)) != OK) {
+			delete ifs;
 			delete hfs;
 			return status;
 		}
 		
 		
+		
+		
+		if((status = ifs->insertRecord(rec, temprid)) != OK) {
+			delete ifs;
+			delete hfs;
+			return status;
+		}
 		
 	}
 }

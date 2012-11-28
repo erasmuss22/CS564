@@ -22,7 +22,7 @@ const Status QU_Delete(const string & relation,
 	const char *filter;
 	AttrDesc ad;
 	
-	HeapFileScan* hfs = new HeapFileScan(result, status);
+	HeapFileScan* hfs = new HeapFileScan(relation, status);
     if(status != OK) {
 		delete hfs;
 		return status;
@@ -36,16 +36,18 @@ const Status QU_Delete(const string & relation,
 		}
 		
 		// get the attribute type and store it as a filter
+		float tempf;
+		int tempi;
 		switch(ad.attrType){
 			case FLOAT:
 			
-			    float tempf = atof(attrValue);
+			    tempf = atof(attrValue);
 			    filter = (char *)&tempf;
 			    break;
 				
 		    case INTEGER:
 			
-			    int tempi = atoi(attrValue);
+			    tempi = atoi(attrValue);
 			    filter = (char *)&tempi;
 			    break;
 				
@@ -62,9 +64,9 @@ const Status QU_Delete(const string & relation,
 		return status;
 	}
 	
-	while((status = hfs.scanNext(rid)) == OK){
+	while((status = hfs->scanNext(rid)) == OK){
 		
-		if((status = hfs.deleteRecord()) != OK) {
+		if((status = hfs->deleteRecord()) != OK) {
 			delete hfs;
 			return status;
 		}
