@@ -36,7 +36,7 @@ const Status QU_Select(const string & result,
 	const char *filter;
 	int width = 0;
 	
-	// Get all attribute descriptions of each projName
+	// Get all attribute descriptions of each projName and calculate width of result record.
 	for(int i = 0; i < projCnt; i++){
 	    if((status = attrCat->getInfo(projNames[i].relName, projNames[i].attrName, attrs[i])) != OK){ 
 			delete[] attrs;
@@ -45,6 +45,7 @@ const Status QU_Select(const string & result,
 		width += attrs[i].attrLen;
     }
 	
+	//If we get an attribute info object to use as the filter
 	if (attr != NULL){
 		
 		// Get and store the AttrDesc for the relName and attrName of the attr
@@ -81,16 +82,21 @@ const Status QU_Select(const string & result,
 		}
 		
 	} else {
+		//No filtering attribute provided, need a relname for the HeapFileScan
+		// so we retrieve the attrDesc for the first object in the projection
+		// attribute array
+		
 		if (projCnt > 0){
 			if((status = attrCat->getInfo( projNames[0].relName, projNames[0].attrName, ad)) != OK) {
 				delete[] attrs;
 				return status;
 			}
 		}
+		//No attributes to use in the projection, return OK to prevent waste of CPU time
 		else {
-			//RETURN ERROR STATUS
 			return OK;
 		}
+		
 		// attr is null so we do an unconditional scan
 		if((status = ScanSelect(result, projCnt, attrs, &ad, op, NULL, width)) != OK) { 
 			delete[] attrs;
@@ -99,6 +105,7 @@ const Status QU_Select(const string & result,
 		
 	}
 	
+	//final cleanup
 	delete[] attrs;
 	return OK;
 	
@@ -133,14 +140,16 @@ const Status ScanSelect(const string & result,
 		return status;
 	}
 	
+
 	if (filter == NULL){
+		//Start unconditional scan
 		if ((status = hfs->startScan(0, 0, (Datatype)attrDesc->attrType, filter, op)) != OK){
 			delete ifs;
 			delete hfs;
 			return status;
 		}
 	} else {
-		
+		//Start scan using a filter
 		if ((status = hfs->startScan(attrDesc->attrOffset, attrDesc->attrLen, (Datatype)attrDesc->attrType, filter, op)) != OK){
 			delete ifs;
 			delete hfs;
@@ -148,6 +157,7 @@ const Status ScanSelect(const string & result,
 		}
 	}
 	
+	//Prepare result record for the results table
 	char outputData[reclen];
 	resultRec.data = (void *)outputData;
 	resultRec.length = reclen;
@@ -164,6 +174,10 @@ const Status ScanSelect(const string & result,
 		float tempf;
 		int tempi;
 		int outOffset = 0;
+		
+		//Found a record matching our scan constraints, copy data from found record into
+		// the result record.  Keep track of where we are inserting into the results record
+		// by using the outOffset which is incremented by the attrLen of each attr added.
 		for (int i = 0; i < projCnt; i++) {
 
 			memcpy(outputData + outOffset, (char *)rec.data + projNames[i].attrOffset,
@@ -174,6 +188,7 @@ const Status ScanSelect(const string & result,
 			outOffset += projNames[i].attrLen;
 		}
 		
+		//Insert result record into results table
 		if((status = ifs->insertRecord(resultRec, temprid)) != OK) {
 			delete ifs;
 			delete hfs;
@@ -182,6 +197,7 @@ const Status ScanSelect(const string & result,
 		
 	}
 	
+	//final cleanup
 	delete hfs;
 	delete ifs;
 	
