@@ -68,7 +68,6 @@ const Status QU_Insert(const string & relation,
 			int tempi;
 			float tempf;
 		//	if (string(rel[j].attrName) == string(attrs[i].attrName)){
-				cout << "here" << endl;
 				switch (attrs[i].attrType) {
 						case INTEGER:
 							tempi = atoi((char*) attrList[i].attrValue);

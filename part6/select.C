@@ -88,7 +88,8 @@ const Status QU_Select(const string & result,
 			}
 		}
 		else {
-			//RETURN ERROR STATUS 
+			//RETURN ERROR STATUS
+			return OK;
 		}
 		// attr is null so we do an unconditional scan
 		if((status = ScanSelect(result, projCnt, attrs, &ad, op, NULL, width)) != OK) { 
@@ -139,7 +140,8 @@ const Status ScanSelect(const string & result,
 			return status;
 		}
 	} else {
-		if ((status = hfs->startScan(attrDesc->attrOffset, reclen, (Datatype)0, filter, op)) != OK){
+		
+		if ((status = hfs->startScan(attrDesc->attrOffset, attrDesc->attrLen, (Datatype)attrDesc->attrType, filter, op)) != OK){
 			delete ifs;
 			delete hfs;
 			return status;
@@ -159,22 +161,29 @@ const Status ScanSelect(const string & result,
 			return status;
 		}
 		
+		float tempf;
+		int tempi;
 		int outOffset = 0;
 		for (int i = 0; i < projCnt; i++) {
-			memcpy(outputData + outOffset,
-			   (char *)rec.data + projNames[i].attrOffset,
-			   projNames[i].attrLen);
+
+			memcpy(outputData + outOffset, (char *)rec.data + projNames[i].attrOffset,
+							projNames[i].attrLen);
+			   
+			   
 			   
 			outOffset += projNames[i].attrLen;
 		}
 		
-		if((status = ifs->insertRecord(rec, temprid)) != OK) {
+		if((status = ifs->insertRecord(resultRec, temprid)) != OK) {
 			delete ifs;
 			delete hfs;
 			return status;
 		}
 		
 	}
+	
+	delete hfs;
+	delete ifs;
 	
 	if( status != FILEEOF ) return status;
 	else return OK;
