@@ -81,9 +81,17 @@ const Status QU_Select(const string & result,
 		}
 		
 	} else {
-		
+		if (projCnt > 0){
+			if((status = attrCat->getInfo( projNames[0].relName, projNames[0].attrName, ad)) != OK) {
+				delete[] attrs;
+				return status;
+			}
+		}
+		else {
+			//RETURN ERROR STATUS 
+		}
 		// attr is null so we do an unconditional scan
-		if((status = ScanSelect(result, projCnt, attrs, NULL, op, NULL, width)) != OK) { 
+		if((status = ScanSelect(result, projCnt, attrs, &ad, op, NULL, width)) != OK) { 
 			delete[] attrs;
 			return status;
 		}
@@ -112,17 +120,13 @@ const Status ScanSelect(const string & result,
 	RID rid;
 	RID temprid;
 	Record rec;
+	Record resultRec;
 	
 	InsertFileScan* ifs = new InsertFileScan(result, status);
 	HeapFileScan* hfs;
-	if (attrDesc != NULL){
-		hfs = new HeapFileScan(attrDesc->relName, status);
-	} else {
-		if (projCnt > 0){
-			hfs = new HeapFileScan(projNames[0].relName, status);
-		}
-	}
-    if(status != OK) {
+	hfs = new HeapFileScan(attrDesc->relName, status);
+	
+	if(status != OK) {
 		delete ifs;
 		delete hfs;
 		return status;
@@ -142,6 +146,11 @@ const Status ScanSelect(const string & result,
 		}
 	}
 	
+	char outputData[reclen];
+	resultRec.data = (void *)outputData;
+	resultRec.length = reclen;
+	
+	
 	while((status = hfs->scanNext(rid)) == OK){
 		
 		if((status = hfs->getRecord(rec)) != OK) {
@@ -150,8 +159,14 @@ const Status ScanSelect(const string & result,
 			return status;
 		}
 		
-		
-		
+		int outOffset = 0;
+		for (int i = 0; i < projCnt; i++) {
+			memcpy(outputData + outOffset,
+			   (char *)rec.data + projNames[i].attrOffset,
+			   projNames[i].attrLen);
+			   
+			outOffset += projNames[i].attrLen;
+		}
 		
 		if((status = ifs->insertRecord(rec, temprid)) != OK) {
 			delete ifs;
@@ -160,4 +175,7 @@ const Status ScanSelect(const string & result,
 		}
 		
 	}
+	
+	if( status != FILEEOF ) return status;
+	else return OK;
 }
