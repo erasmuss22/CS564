@@ -39,14 +39,14 @@
   while($row = pg_fetch_array($result,NULL,PGSQL_ASSOC))  {
     echo "        <tr>";
     echo "\n         <td align=\"center\">";
-    echo "\n          ".$row['pname'];
+    echo "\n          ".$row['title'];
     echo "\n         </td>";
     echo "\n         <td align=\"center\">";
 
-    echo "\n          ".$row['pname'];
+    echo "\n          ".$row['author'];
     echo "\n         </td>";
     echo "\n         <td align=\"center\">";
-    echo "\n          ".$row['pname'];
+    echo "\n          ".$row['num'];
     echo "\n         </td>";
     echo "\n        </tr>";
   }
