@@ -1,28 +1,41 @@
 <html>
 
- <head><title>CS 564 PHP Project: Update Page</title></head>
+ <head><title>Fantasy Football: Update Page</title></head>
 
  <body>
 
- <h2>Sample CS 564 PHP Project: Update Page</h2>
-  <h3>Modify the Attributes of an Existing Book</h3>
+ <h2>Update NFL Offensive Player Info</h2>
+  <h3>Modify the details of an existing NFL player.</h3>
 
-Enter an exact title first (so that we can locate the book).<br>
-Then enter values for the remaining attributes.<br> 
-We will set those attributes to the entered values.
+  <p>
+    Enter the player name, team, and jersey number of the corresponding player.<br>
+    Then enter values for the player's total yards and touchdowns.<br> 
+    We will set those attributes to the entered values.
+  </p>
+  
   <table width="40%" border="0" cellpadding="0" cellspacing="1" bgcolor="#CCCCCC">
     <form name="form1" method="post" action="modify.php">
       <tr align="center">
-        <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Title</font></td>
-        <td height="30" class="deepred" width="52%"><input type="text" name="title">
-	</tr>
-	<tr align="center">
-	<td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Author</font></td>
-        <td height="30" class="deepred" width="52%"><input type="text" name="author">
-	</tr>
-	<tr align="center">
-	<td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Number of Copies</font></td>
-        <td height="30" class="deepred" width="52%"><input type="text" name="num">
+        <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Player Name</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="pname">
+	  </tr>
+	  <tr align="center">
+	    <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">NFL Team</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="nflteam">
+	  </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Jersey #</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="jersey">
+        </td>
+      </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Total Yards</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="yards">
+        </td>
+      </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Touchdowns</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="touchdowns">
         </td>
       </tr>
       <tr>
@@ -35,18 +48,81 @@ We will set those attributes to the entered values.
   </table>
 
 
-  <h3>Insert a New Book</h3>
+  <h3>Insert an Offensive NFL Player</h3>
+  
+  <p>
+    Enter the player name, team name, and jersey number of an <br>
+	offensive player.  The total yards and touchdowns are optional <br>
+	values.  Click submit to insert this player into the database.
+  </p>
 
-  In your project, at this point you need to insert a form interface
-  that would allow users to insert a new entity (e.g., book in 
-  this sample project). 
+  <table width="40%" border="0" cellpadding="0" cellspacing="1" bgcolor="#CCCCCC">
+    <form name="form2" method="post" action="insert.php">
+	        <tr align="center">
+        <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Player Name</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="pname">
+	  </tr>
+	  <tr align="center">
+	    <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">NFL Team</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="nflteam">
+	  </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Jersey #</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="jersey">
+        </td>
+      </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Total Yards</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="yards">
+        </td>
+      </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Touchdowns</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="touchdowns">
+        </td>
+      </tr>
+      <tr>
+        <td height="24" align="center" width="48%">
+        </td>
+        <td align="center" width="52%"><input type="submit" name="Submit" value="Submit"><input type="reset" name="Submit2" value="Reset">
+        </td>
+      </tr>
 
+	</form>
+  </table>
 
-  <h3>Delete an Existing Book</h3>  
+  <h3>Delete an Existing NFL Offensive Player</h3>  
+  
+  <p>
+    Enter a player's name, nfl team, and jersey number to <br>
+	delete this player from the database.  This action is <br>
+	irreversible.  They may disappear in real life...
+  </p>
 
-  In your project, at this point you need to insert a form interface
-  that would allow users to delete an existing entity (e.g., 
-  we can delete a book using a title in this sample project). 
+  <table width="40%" border="0" cellpadding="0" cellspacing="1" bgcolor="#CCCCCC">
+    <form name="form3" method="post" action="insert.php">
+	        <tr align="center">
+        <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Player Name</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="pname">
+	  </tr>
+	  <tr align="center">
+	    <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">NFL Team</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="nflteam">
+	  </tr>
+	  <tr align="center">
+	  <td height="30" class="deepred" width="48%"><font face="Times New Roman, Times, serif">Jersey #</font></td>
+        <td height="30" class="deepred" width="52%"><input type="text" name="jersey">
+        </td>
+      </tr>
+      <tr>
+        <td height="24" align="center" width="48%">
+        </td>
+        <td align="center" width="52%"><input type="submit" name="Submit" value="Submit"><input type="reset" name="Submit2" value="Reset">
+        </td>
+      </tr>
+
+	</form>
+  </table>
   
   </body>
 
