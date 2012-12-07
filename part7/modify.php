@@ -7,7 +7,7 @@
  <?php
    // First check the primary key items were set
   if ( (!isset($_POST['pname']) || $_POST['pname'] == '') ||
-       (!isset($_POST['nflteam']) || $_POST['nflteam'] == '' ||
+       (!isset($_POST['nflteam']) || $_POST['nflteam']) == '' ||
        (!isset($_POST['jersey']) || $_POST['jersey'] == '') ) {
     echo "  <h3><i>Error, you need to specify a player name</i></h3>\n".
       " <a href=\"https://cs564.cs.wisc.edu/rasmusse/update.html\">Back to Update Player page.</a>\n".
