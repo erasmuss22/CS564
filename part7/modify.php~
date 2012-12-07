@@ -73,7 +73,7 @@
     exit();
   }
   
-  if (pg_affected_rows($result) > 0) {
+  if ($result > 0) {
     echo "  <h3>Update Successful</h3>";
     echo "  <p> ".$pname."'s stats were successfully updated. </p>";
   }
