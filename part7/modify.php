@@ -9,7 +9,7 @@
   if ( (!isset($_POST['pname']) || $_POST['pname'] == '') ||
        (!isset($_POST['nflteam']) || $_POST['nflteam']) == '' ||
        (!isset($_POST['jersey']) || $_POST['jersey'] == '') ) {
-    echo "  <h3><i>Error, you need to specify a player name</i></h3>\n".
+    echo "  <h3><i>Error, you need to specify a player name, team, and jersey number.</i></h3>\n".
       " <a href=\"https://cs564.cs.wisc.edu/rasmusse/update.html\">Back to Update Player page.</a>\n".
 	  " </body>\n</html>\n";
     exit();
@@ -42,7 +42,7 @@
   pg_connect('dbname=cs564_f12 host=postgres.cs.wisc.edu') 
 	or die ("Couldn't Connect ".pg_last_error()); 
   
-  // Get category name and item counts
+  // Set the query to update touchdowns and yards values for a player
   if( strlen($yards) > 0 || strlen($touchdowns) > 0 )	{
 	$query = "update fantasy_football.offense set";
 	if( strlen($yards) )	{
@@ -73,6 +73,7 @@
     exit();
   }
   
+  //If there is an affected row, then we found the player to update
   if (pg_affected_rows($result) > 0) {
     echo "  <h3>Update Successful</h3>";
     echo "  <p> ".$pname."'s stats were successfully updated. </p>";
