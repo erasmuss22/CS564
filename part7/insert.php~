@@ -65,7 +65,7 @@
   
   pg_close();
   ?>
-	<?php echo "<a href=\"https://cs564.cs.wisc.edu/rasmusse/update.html\">Back to update page</a><br>"?>
+	<?php echo "<a href=\"https://cs564.cs.wisc.edu/rasmusse/update.html\">Back to update page</a>\n"?>
         <?php echo "<a href=\"https://cs564.cs.wisc.edu/rasmusse/index.html\">Back to main page</a>\n"?>
  </body>
 

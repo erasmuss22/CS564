@@ -5,7 +5,7 @@
  <body>
    <tr>
      <td colspan="2" align="center" valign="top">
-      Here are the search results (searched by title):<br>
+      Here are the advanced search results:<br>
        <table border="1" width="75%">
         <tr>
          <td align="center" bgcolor="#cccccc"><b>Name</b></td>
@@ -22,7 +22,7 @@
   if (isset($_POST['namebox']) && $_POST['namebox'] == 'namebox') {
     if (isset($_POST['name']) && $_POST['name'] != ''){
 	$numItems++;
-	$query .= " WHERE pname = '".$_POST['name']."'";
+	$query .= " WHERE pname LIKE '%".$_POST['name']."%'";
     } else {
 	$problems = true;
     }
@@ -65,9 +65,9 @@
     if (isset($_POST['team']) && $_POST['team'] != ''){
 	$numItems++;
         if ($numItems > 1) {
-	   $query .= " AND nflteam = '".$_POST['team']."'";
+	   $query .= " AND nflteam LIKE '%".$_POST['team']."%'";
         } else {
-	   $query .= " WHERE nflteam = '".$_POST['team']."'";
+	   $query .= " WHERE nflteam LIKE '%".$_POST['team']."%'";
 	}
     } else {
 	$problems = true;
@@ -79,16 +79,16 @@
         if ($numItems > 1) {
 	   switch($_POST['yarddrop'])
 	    {
-	      case "yardlt": $query .= " AND yards < ".$_POST['yards']; break;
-	      case "yardeq": $query .= " AND yards = ".$_POST['yards']; break;
-	      case "yardgt": $query .= " AND yards > ".$_POST['yards']; break;
+	      case "ylt": $query .= " AND yards < ".$_POST['yards']; break;
+	      case "yeq": $query .= " AND yards = ".$_POST['yards']; break;
+	      case "ygt": $query .= " AND yards > ".$_POST['yards']; break;
 	    }
         } else {
 	   switch($_POST['yarddrop'])
 	    {
-	      case "yardlt": $query .= " WHERE yards < ".$_POST['yards']; break;
-	      case "yardeq": $query .= " WHERE yards = ".$_POST['yards']; break;
-	      case "yardgt": $query .= " WHERE yards > ".$_POST['yards']; break;
+	      case "ylt": $query .= " WHERE yards < ".$_POST['yards']; break;
+	      case "yeq": $query .= " WHERE yards = ".$_POST['yards']; break;
+	      case "ygt": $query .= " WHERE yards > ".$_POST['yards']; break;
 	    }
 	}
     } else {
@@ -96,12 +96,13 @@
     }
   }
 
-echo $query;
-
-/*echo "  <h3><i>Error, title not set to an acceptable value</i></h3>\n".
-        " <a href=\"https://cs564.cs.wisc.edu/halit/index.html\">Back to main page</a>\n".
+  if ($problems == true) {
+     echo "  <h3><i>Error, improper input</i></h3>\n".
+        " <a href=\"https://cs564.cs.wisc.edu/rasmusse/advanced_search.html\">Back to advanced search page</a>\n".
 	" </body>\n</html>\n";
-    exit();*/
+    exit();
+  }
+
 
   // Connect to the Database
   pg_connect('dbname=cs564_f12 host=postgres.cs.wisc.edu') 
@@ -115,33 +116,41 @@ echo $query;
     exit();
   }
   
-  
-  // get each row and print it out  
-  while($row = pg_fetch_array($result,NULL,PGSQL_ASSOC))  {
-    echo "        <tr>";
-    echo "\n         <td align=\"center\">";
-    echo "\n          ".$row['pname'];
-    echo "\n         </td>";
-    echo "\n         <td align=\"center\">";
+  if ($problems == false) {
+      $result = pg_query($query);
+      if (!$result) {
+        $errormessage = pg_last_error();
+        echo "Error with query: " . $errormessage;
+        exit();
+      }
+      // get each row and print it out  
+      while($row = pg_fetch_array($result,NULL,PGSQL_ASSOC))  {
+	    echo "        <tr>";
+	    echo "\n         <td align=\"center\">";
+	    echo "\n          ".$row['pname'];
+	    echo "\n         </td>";
+	    echo "\n         <td align=\"center\">";
 
-    echo "\n          ".$row['nflteam'];
-    echo "\n         </td>";
-    echo "\n         <td align=\"center\">";
-    echo "\n          ".$row['jersey'];
-    echo "\n         </td>";
-    echo "\n         <td align=\"center\">";
-    echo "\n          ".$row['touchdowns'];
-    echo "\n         </td>";
-    echo "\n         <td align=\"center\">";
-    echo "\n          ".$row['yards'];
-    echo "\n         </td>";
-    echo "\n        </tr>";
+	    echo "\n          ".$row['nflteam'];
+	    echo "\n         </td>";
+	    echo "\n         <td align=\"center\">";
+	    echo "\n          ".$row['jersey'];
+	    echo "\n         </td>";
+	    echo "\n         <td align=\"center\">";
+	    echo "\n          ".$row['touchdowns'];
+	    echo "\n         </td>";
+	    echo "\n         <td align=\"center\">";
+	    echo "\n          ".$row['yards'];
+	    echo "\n         </td>";
+	    echo "\n        </tr>";
+      }
   }
   pg_close();
 ?>
  </table>
      </td>
     </tr>
+	<?php echo "<a href=\"https://cs564.cs.wisc.edu/rasmusse/advanced_search.html\">Back to Advanced Search page</a>\n"?>
         <?php echo "<a href=\"https://cs564.cs.wisc.edu/rasmusse/index.html\">Back to main page</a>\n"?>
  </body>
 
