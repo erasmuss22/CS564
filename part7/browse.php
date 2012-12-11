@@ -15,12 +15,14 @@
          <td align="center" bgcolor="#cccccc"><b>Yards</b></td>
         </tr>	
  <?php
-   // First check the itemid to see if it has been set
+ 
   // Connect to the Database
   pg_connect('dbname=cs564_f12 host=postgres.cs.wisc.edu') 
 	or die ("Couldn't Connect ".pg_last_error()); 
-  // Get category name and item counts
+
+  // Set query to select all from DB
   $query = "SELECT * FROM fantasy_football.offense";
+
   // Execute the query and check for errors
   $result = pg_query($query);
   if (!$result) {
@@ -51,6 +53,7 @@
     echo "\n         </td>";
     echo "\n        </tr>";
   }
+
   pg_close();
 ?>
  </table>

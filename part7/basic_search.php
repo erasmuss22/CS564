@@ -15,19 +15,25 @@
          <td align="center" bgcolor="#cccccc"><b>Yards</b></td>
         </tr>	
  <?php
-   // First check the itemid to see if it has been set
+   
+  // Make sure the user entered a name
   if (! isset($_POST['title'])) {
     echo "  <h3><i>Error, name not set to an acceptable value</i></h3>\n".
         " <a href=\"https://cs564.cs.wisc.edu/rasmusse/index.html\">Back to main page</a>\n".
 	" </body>\n</html>\n";
     exit();
   }
+
+  // grab the name and store it in a var
   $title = $_POST['title'];
+
   // Connect to the Database
   pg_connect('dbname=cs564_f12 host=postgres.cs.wisc.edu') 
 	or die ("Couldn't Connect ".pg_last_error()); 
-  // Get category name and item counts
+
+  // Use wild cards to allow for more search flexibility
   $query = "SELECT * FROM fantasy_football.offense where pname LIKE '%".$title."%'";
+
   // Execute the query and check for errors
   $result = pg_query($query);
   if (!$result) {

@@ -15,10 +15,17 @@
          <td align="center" bgcolor="#cccccc"><b>Yards</b></td>
         </tr>	
  <?php
-   // First check the itemid to see if it has been set
+
   $numItems = 0;
   $problems = false;
+
+
+  // Begin the query and then only concatenate fields that are
+  // checked and filled out
   $query = "SELECT * FROM fantasy_football.offense";
+
+  // check each check box and then check if the actual field is filled
+  // out.
   if (isset($_POST['namebox']) && $_POST['namebox'] == 'namebox') {
     if (isset($_POST['name']) && $_POST['name'] != ''){
 	$numItems++;
@@ -27,22 +34,35 @@
 	$problems = true;
     }
   }
+
+
   if (isset($_POST['jerseybox']) && $_POST['jerseybox'] == 'jerseybox') {
     if (isset($_POST['jersey']) && $_POST['jersey'] != '' && is_numeric($_POST['jersey'])){
+
 	$numItems++;
+
+        // since this if-statement isn't the first, we have to allow
+        // for the posibility that the user didn't search by name
         if ($numItems > 1) {
 	   $query .= " AND jersey = ".$_POST['jersey'];
         } else {
 	   $query .= " WHERE jersey = ".$_POST['jersey'];
 	}
+
+
     } else {
 	$problems = true;
     }
   }
+
+
   if (isset($_POST['tdbox']) && $_POST['tdbox'] == 'tdbox') {
     if (isset($_POST['touchdowns']) && $_POST['touchdowns'] != '' && is_numeric($_POST['touchdowns'])){
+	
 	$numItems++;
+
         if ($numItems > 1) {
+	   // Decide what to search for based on the dropdown box
 	   switch($_POST['tddrop'])
 	    {
 	      case "tdlt": $query .= " AND touchdowns < ".$_POST['touchdowns']; break;
@@ -57,10 +77,13 @@
 	      case "tdgt": $query .= " WHERE touchdowns > ".$_POST['touchdowns']; break;
 	    }
 	}
+
     } else {
 	$problems = true;
     }
   }
+
+
   if (isset($_POST['teambox']) && $_POST['teambox'] == 'teambox') {
     if (isset($_POST['team']) && $_POST['team'] != ''){
 	$numItems++;
@@ -73,9 +96,13 @@
 	$problems = true;
     }
   }
+
+
   if (isset($_POST['yardbox']) && $_POST['yardbox'] == 'yardbox') {
     if (isset($_POST['yards']) && $_POST['yards'] != '' && is_numeric($_POST['yards'])){
+	
 	$numItems++;
+
         if ($numItems > 1) {
 	   switch($_POST['yarddrop'])
 	    {
@@ -91,11 +118,15 @@
 	      case "ygt": $query .= " WHERE yards > ".$_POST['yards']; break;
 	    }
 	}
+
     } else {
 	$problems = true;
     }
   }
 
+
+  // If the user didn't fill in a box that they checked, then there is improper
+  // input. We display the error message and don't do the query
   if ($problems == true) {
      echo "  <h3><i>Error, improper input</i></h3>\n".
         " <a href=\"https://cs564.cs.wisc.edu/rasmusse/advanced_search.html\">Back to advanced search page</a>\n".
@@ -116,6 +147,7 @@
     exit();
   }
   
+
   if ($problems == false) {
       $result = pg_query($query);
       if (!$result) {
@@ -145,6 +177,7 @@
 	    echo "\n        </tr>";
       }
   }
+
   pg_close();
 ?>
  </table>

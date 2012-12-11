@@ -27,7 +27,7 @@
   pg_connect('dbname=cs564_f12 host=postgres.cs.wisc.edu') 
 	or die ("Couldn't Connect ".pg_last_error()); 
   // Get category name and item counts
-  $query = "SELECT * FROM fantasy_football.offense where pname='".$title."'";
+  $query = "SELECT * FROM fantasy_football.offense where pname LIKE '%".$title."%'";
   // Execute the query and check for errors
   $result = pg_query($query);
   if (!$result) {

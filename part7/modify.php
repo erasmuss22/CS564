@@ -5,6 +5,7 @@
  <body>      
 	
  <?php
+
    // First check the primary key items were set
   if ( (!isset($_POST['pname']) || $_POST['pname'] == '') ||
        (!isset($_POST['nflteam']) || $_POST['nflteam']) == '' ||
@@ -14,6 +15,7 @@
 	  " </body>\n</html>\n";
     exit();
   }
+
   //Make sure two numeric attributes are numeric
   if ( isset($_POST['yards']) && !($_POST['yards'] == '') ) {
     if (!is_numeric($_POST['yards']) ){
@@ -23,6 +25,7 @@
       exit();
     }
   }  
+
   if ( isset($_POST['touchdowns']) && !($_POST['touchdowns'] == '') ) {
     if (!is_numeric($_POST['touchdowns']) ){
       echo "  <h3><i>The touchdowns attribute must be a number.</i></h3>\n".
@@ -32,6 +35,7 @@
     }
   }
   
+  // grab the variables from the fields
   $pname = $_POST['pname'];
   $nflteam = $_POST['nflteam'];
   $jersey = $_POST['jersey'];
@@ -44,16 +48,21 @@
   
   // Set the query to update touchdowns and yards values for a player
   if( strlen($yards) > 0 || strlen($touchdowns) > 0 )	{
+	
 	$query = "update fantasy_football.offense set";
+
 	if( strlen($yards) )	{
 	$query .= " yards='".$yards."'";
 	}
+
 	if( strlen($yards) && strlen($touchdowns) )	{
 	$query .= ",";
 	}
+
 	if( strlen($touchdowns) )	{
 	$query .= " touchdowns=".$touchdowns;
 	}
+
 	$query .= " where (pname='".$pname."')";
 	$query .= " and (nflteam='".$nflteam."')";
 	$query .= " and (jersey='".$jersey."')";

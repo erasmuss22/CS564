@@ -48,8 +48,11 @@
     $errormessage = pg_last_error();
     echo "Error with query: " . $errormessage;
     exit();
-  } else {
+  } 
+  if (pg_affected_rows($result) > 0) {  
      echo "<h3>Succesfully deleted ".$pname."</h3><br>";
+  } else {
+     echo "<h3>Did not find ".$pname.". No player deleted</h3><br>";
   }
   //Need to check for error inserting?
   pg_close();

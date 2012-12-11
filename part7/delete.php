@@ -15,6 +15,7 @@
     exit();
   }
   
+  // grab those variables
   $pname = $_POST['pname'];
   $nflteam = $_POST['nflteam'];
   $jersey = $_POST['jersey'];
@@ -23,6 +24,8 @@
   pg_connect('dbname=cs564_f12 host=postgres.cs.wisc.edu') 
 	or die ("Couldn't Connect ".pg_last_error()); 
   
+
+  // first do a query to delete from the offense table
   $query = "delete from fantasy_football.offense ";
   $query .= " where (pname='".$pname."')";
   $query .= " and (nflteam='".$nflteam."')";
@@ -37,6 +40,8 @@
   }
   
 
+  // next execute a query to delete from players since
+  // this is an ISA relationship
   $query = "delete from fantasy_football.players ";
   $query .= " where (pname='".$pname."')";
   $query .= " and (nflteam='".$nflteam."')";
@@ -49,12 +54,15 @@
     echo "Error with query: " . $errormessage;
     exit();
   } 
+
+  // See if there was a change in the DB and output the
+  // result
   if (pg_affected_rows($result) > 0) {  
      echo "<h3>Succesfully deleted ".$pname."</h3><br>";
   } else {
      echo "<h3>Did not find ".$pname.". No player deleted</h3><br>";
   }
-  //Need to check for error inserting?
+
   pg_close();
   ?>
         <?php echo "<a href=\"https://cs564.cs.wisc.edu/rasmusse/update.html\">Back to update page</a><br>"?>
